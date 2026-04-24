@@ -1,0 +1,197 @@
+.page {
+  min-height: 100vh;
+  padding: 1rem;
+  background: #e8edf4;
+  color: #243041;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.card {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1rem;
+  border-radius: 24px;
+  background: #e8edf4;
+  box-shadow:
+    10px 10px 24px #c8d2df,
+    -10px -10px 24px #fbffff;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.status {
+  margin: 0 0 1rem;
+  color: #51627c;
+}
+
+.install-banner {
+  margin: 0 0 1rem;
+  padding: 0.85rem;
+  border-radius: 16px;
+  background: #e8edf4;
+  box-shadow:
+    inset 6px 6px 14px #d1dbe8,
+    inset -6px -6px 14px #fdffff;
+}
+
+.install-banner p {
+  margin: 0 0 0.6rem;
+  color: #425570;
+}
+
+.install-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.video-stage {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #e8edf4;
+  box-shadow:
+    inset 8px 8px 16px #d1dbe8,
+    inset -8px -8px 16px #fdffff;
+}
+
+video {
+  width: 100%;
+  background: #111927;
+  aspect-ratio: 16/11;
+  object-fit: cover;
+}
+
+.local-preview {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  width: 31%;
+  min-width: 112px;
+  max-width: 170px;
+  border-radius: 12px;
+  border: 2px solid #e8edf4;
+  box-shadow:
+    6px 6px 12px #232c3a55,
+    -4px -4px 10px #ffffff44;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+button,
+input,
+textarea {
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  color: #243041;
+  background: #e8edf4;
+  box-shadow:
+    6px 6px 14px #c8d2df,
+    -6px -6px 14px #fbffff;
+}
+
+button {
+  min-height: 44px;
+  padding: 0.6rem 0.7rem;
+}
+
+button:active {
+  box-shadow:
+    inset 6px 6px 14px #c8d2df,
+    inset -6px -6px 14px #fbffff;
+}
+
+.signal-section,
+.chat {
+  margin-top: 1rem;
+}
+
+textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.messages {
+  min-height: 88px;
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 14px;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #e8edf4;
+  box-shadow:
+    inset 6px 6px 14px #c8d2df,
+    inset -6px -6px 14px #fbffff;
+}
+
+.message-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message-row.mine {
+  justify-content: flex-end;
+}
+
+.message-bubble {
+  margin: 0;
+  max-width: 82%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px;
+  background: #dde5f0;
+  color: #243041;
+  box-shadow:
+    5px 5px 10px #c7d1de,
+    -5px -5px 10px #f8ffff;
+  word-break: break-word;
+}
+
+.message-row.mine .message-bubble {
+  background: #cfdeef;
+}
+
+.chat-form {
+  margin-top: 0.65rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.65rem;
+}
+
+input {
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+}
+
+@media (min-width: 760px) {
+  .page {
+    padding: 1.4rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .controls {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .install-actions {
+    max-width: 360px;
+  }
+}
