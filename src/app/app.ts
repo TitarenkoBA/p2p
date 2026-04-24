@@ -259,8 +259,9 @@ export class App implements OnInit, OnDestroy {
       if (!this.remoteStream) {
         this.remoteStream = new MediaStream();
       }
-      for (const track of event.streams[0].getTracks()) {
-        this.remoteStream.addTrack(track);
+      const existingTrackIds = new Set(this.remoteStream.getTracks().map((track) => track.id));
+      if (!existingTrackIds.has(event.track.id)) {
+        this.remoteStream.addTrack(event.track);
       }
       this.renderRemoteStream();
     };
