@@ -5,9 +5,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:pages": "ng build --base-href ./",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "deploy": "npm run build && gh-pages -d dist/p2p/browser"
+    "deploy": "npm run build:pages && gh-pages -d dist/p2p/browser"
   },
   "prettier": {
     "printWidth": 100,
