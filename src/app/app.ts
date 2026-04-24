@@ -30,6 +30,8 @@ export class App implements OnInit, OnDestroy {
 
   @ViewChild('remoteVideo')
   private remoteVideoRef?: ElementRef<HTMLVideoElement>;
+  @ViewChild('remoteAudio')
+  private remoteAudioRef?: ElementRef<HTMLAudioElement>;
 
   protected localSignalText = '';
   protected remoteSignalText = '';
@@ -41,7 +43,8 @@ export class App implements OnInit, OnDestroy {
   protected readonly canInstallApp = signal(false);
 
   private localStream?: MediaStream;
-  private remoteStream?: MediaStream;
+  private remoteVideoStream?: MediaStream;
+  private remoteAudioStream?: MediaStream;
   private peerConnection?: RTCPeerConnection;
   private dataChannel?: RTCDataChannel;
   private installPromptEvent?: BeforeInstallPromptEvent;
@@ -239,8 +242,9 @@ export class App implements OnInit, OnDestroy {
     this.peerConnection?.close();
     this.peerConnection = undefined;
     this.dataChannel = undefined;
-    this.remoteStream = undefined;
-    this.renderRemoteStream();
+    this.remoteVideoStream = undefined;
+    this.remoteAudioStream = undefined;
+    this.renderRemoteMedia();
     if (resetSignal) {
       this.remoteSignalText = '';
       this.localSignalText = '';
@@ -256,14 +260,24 @@ export class App implements OnInit, OnDestroy {
     });
 
     this.peerConnection.ontrack = (event) => {
-      if (!this.remoteStream) {
-        this.remoteStream = new MediaStream();
+      if (event.track.kind === 'video') {
+        if (!this.remoteVideoStream) {
+          this.remoteVideoStream = new MediaStream();
+        }
+        const existingTrackIds = new Set(this.remoteVideoStream.getTracks().map((track) => track.id));
+        if (!existingTrackIds.has(event.track.id)) {
+          this.remoteVideoStream.addTrack(event.track);
+        }
+      } else if (event.track.kind === 'audio') {
+        if (!this.remoteAudioStream) {
+          this.remoteAudioStream = new MediaStream();
+        }
+        const existingTrackIds = new Set(this.remoteAudioStream.getTracks().map((track) => track.id));
+        if (!existingTrackIds.has(event.track.id)) {
+          this.remoteAudioStream.addTrack(event.track);
+        }
       }
-      const existingTrackIds = new Set(this.remoteStream.getTracks().map((track) => track.id));
-      if (!existingTrackIds.has(event.track.id)) {
-        this.remoteStream.addTrack(event.track);
-      }
-      this.renderRemoteStream();
+      this.renderRemoteMedia();
     };
 
     this.peerConnection.ondatachannel = (event) => {
@@ -334,13 +348,21 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.localVideoRef.nativeElement.srcObject = this.localStream ?? null;
+    this.localVideoRef.nativeElement.muted = true;
+    this.localVideoRef.nativeElement.volume = 0;
   }
 
-  private renderRemoteStream(): void {
+  private renderRemoteMedia(): void {
     if (!this.remoteVideoRef) {
       return;
     }
-    this.remoteVideoRef.nativeElement.srcObject = this.remoteStream ?? null;
+    this.remoteVideoRef.nativeElement.srcObject = this.remoteVideoStream ?? null;
+    this.remoteVideoRef.nativeElement.muted = true;
+
+    if (!this.remoteAudioRef) {
+      return;
+    }
+    this.remoteAudioRef.nativeElement.srcObject = this.remoteAudioStream ?? null;
   }
 
   private async requestLocalStreamWithFallback(): Promise<MediaStream> {
