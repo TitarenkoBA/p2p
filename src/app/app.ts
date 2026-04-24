@@ -12,6 +12,12 @@ interface ChatMessage {
   text: string;
 }
 
+const MIC_CONSTRAINTS: MediaTrackConstraints = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true
+};
+
 @Component({
   selector: 'app-root',
   imports: [FormsModule],
@@ -339,15 +345,15 @@ export class App implements OnInit, OnDestroy {
   private async requestLocalStreamWithFallback(): Promise<MediaStream> {
     const attempts: MediaStreamConstraints[] = [
       {
-        audio: true,
+        audio: MIC_CONSTRAINTS,
         video: { facingMode: { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } }
       },
       {
-        audio: true,
+        audio: MIC_CONSTRAINTS,
         video: true
       },
       {
-        audio: true,
+        audio: MIC_CONSTRAINTS,
         video: false
       }
     ];
@@ -371,4 +377,5 @@ export class App implements OnInit, OnDestroy {
     }
     return 'Unknown error';
   }
+
 }
