@@ -38,8 +38,11 @@ export class App implements OnInit, OnDestroy {
   protected outboundMessage = '';
   protected readonly chatMessages = signal<ChatMessage[]>([]);
   protected readonly status = signal('Not connected');
-  protected readonly isMicEnabled = signal(true);
-  protected readonly isCamEnabled = signal(true);
+  protected readonly isTimerStarted = signal(false);
+  protected readonly isLoading = signal(false);
+  protected readonly isMicEnabled = signal(false);
+  protected readonly isCamEnabled = signal(false);
+  protected readonly isMediaStarted = signal(false);
   protected readonly canInstallApp = signal(false);
 
   private localStream?: MediaStream;
@@ -114,8 +117,8 @@ export class App implements OnInit, OnDestroy {
 
     const hasVideo = this.localStream.getVideoTracks().length > 0;
     const hasAudio = this.localStream.getAudioTracks().length > 0;
-    this.isCamEnabled.set(hasVideo);
-    this.isMicEnabled.set(hasAudio);
+    // this.isCamEnabled.set(hasVideo);
+    // this.isMicEnabled.set(hasAudio);
 
     if (hasVideo && hasAudio) {
       this.status.set('Local media is ready');
@@ -131,6 +134,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected async createOffer(): Promise<void> {
+    this.isLoading.set(true);
     try {
       if (!window.RTCPeerConnection) {
         this.status.set('WebRTC is not supported in this browser');
@@ -149,12 +153,15 @@ export class App implements OnInit, OnDestroy {
       await this.waitForIceGathering(pc, 4000);
       this.localSignalText = JSON.stringify(pc.localDescription);
       this.status.set('Offer created. Share it with your peer.');
+      this.isLoading.set(false);
     } catch (error) {
       this.status.set(`Failed to create offer: ${this.getErrorMessage(error)}`);
+      this.isLoading.set(false);
     }
   }
 
   protected async createAnswerFromOffer(): Promise<void> {
+    this.isLoading.set(true);
     try {
       await this.startCameraAndMic();
       this.disconnect(false, false);
@@ -170,26 +177,37 @@ export class App implements OnInit, OnDestroy {
       await this.waitForIceGathering(pc, 4000);
       this.localSignalText = JSON.stringify(pc.localDescription);
       this.status.set('Answer created. Send it back to caller.');
+      this.isLoading.set(false);
     } catch (error) {
       this.status.set(`Failed to create answer: ${this.getErrorMessage(error)}`);
+      this.isLoading.set(false);
     }
   }
 
   protected async applyRemoteAnswer(): Promise<void> {
+    this.isLoading.set(true);
     try {
       if (!this.peerConnection || !this.peerConnection.localDescription) {
         this.status.set('Create offer first');
+        this.isLoading.set(false);
         return;
       }
 
       const remoteAnswer = this.parseSignalText('answer');
       await this.peerConnection.setRemoteDescription(remoteAnswer);
       this.status.set('Remote answer applied');
+      this.isLoading.set(false);
     } catch (error) {
       this.status.set(`Failed to apply answer: ${this.getErrorMessage(error)}`);
+      this.isLoading.set(false);
     }
   }
 
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && event.ctrlKey) {
+      this.sendMessage();
+    }
+  }
   protected sendMessage(): void {
     const message = this.outboundMessage.trim();
     if (!message || this.dataChannel?.readyState !== 'open') {
@@ -212,6 +230,17 @@ export class App implements OnInit, OnDestroy {
     }
     this.isMicEnabled.set(enabled);
   }
+  protected switchOffMicrophone(): void {
+    if (!this.localStream) {
+      return;
+    }
+
+    this.isMicEnabled.set(false);
+    for (const track of this.localStream.getAudioTracks()) {
+      track.enabled = false;
+    }
+    this.isMicEnabled.set(false);
+  }
 
   protected toggleCamera(): void {
     if (!this.localStream) {
@@ -227,6 +256,21 @@ export class App implements OnInit, OnDestroy {
       track.enabled = enabled;
     }
     this.isCamEnabled.set(enabled);
+  }
+
+  protected switchOffCamera(): void {
+    if (!this.localStream) {
+      return;
+    }
+    if (this.localStream.getVideoTracks().length === 0) {
+      return;
+    }
+
+    this.isCamEnabled.set(false)
+    for (const track of this.localStream.getVideoTracks()) {
+      track.enabled = false;
+    }
+    this.isCamEnabled.set(false);
   }
 
   protected async copySignal(): Promise<void> {
@@ -252,6 +296,7 @@ export class App implements OnInit, OnDestroy {
     if (updateStatus) {
       this.status.set('Not connected');
     }
+    this.isTimerStarted.set(false)
   }
 
   private buildPeerConnection(): RTCPeerConnection {
@@ -293,7 +338,12 @@ export class App implements OnInit, OnDestroy {
   }
 
   private buildDataChannel(channel: RTCDataChannel): RTCDataChannel {
-    channel.onopen = () => this.status.set('Connected');
+    channel.onopen = () => {
+      this.switchOffMicrophone();
+      this.switchOffCamera();
+      this.isTimerStarted();
+      this.status.set('Connected');
+    };
     channel.onmessage = (event) => {
       this.chatMessages.update((items) => [
         ...items,

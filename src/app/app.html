@@ -1,7 +1,43 @@
 <main class="page">
   <section class="card">
-    <h1>Simple P2P Room</h1>
-    @if (canInstallApp()) {
+    <div class="flex md:flex-row flex-col items-center justify-between w-full mg:max-h-[200px]">
+      <h1 class="flex flex-1">
+        P2P Room
+      </h1>
+      <div class="loader-head">
+        <span></span>
+      </div>
+      <div class="container-num scale-50 min-w-[20px] flex-1 flex justify-end">
+        @if (isTimerStarted()) {
+          <div class="nums nums-ten">
+            <div class="num" data-num="0" data-num-next="1"></div>
+            <div class="num" data-num="1" data-num-next="2"></div>
+            <div class="num" data-num="2" data-num-next="3"></div>
+            <div class="num" data-num="3" data-num-next="4"></div>
+            <div class="num" data-num="4" data-num-next="5"></div>
+            <div class="num" data-num="5" data-num-next="6"></div>
+            <div class="num" data-num="6" data-num-next="7"></div>
+            <div class="num" data-num="7" data-num-next="8"></div>
+            <div class="num" data-num="8" data-num-next="9"></div>
+            <div class="num" data-num="9" data-num-next="0"></div>
+          </div>
+  
+          <div class="nums nums-one">
+            <div class="num" data-num="0" data-num-next="1"></div>
+            <div class="num" data-num="1" data-num-next="2"></div>
+            <div class="num" data-num="2" data-num-next="3"></div>
+            <div class="num" data-num="3" data-num-next="4"></div>
+            <div class="num" data-num="4" data-num-next="5"></div>
+            <div class="num" data-num="5" data-num-next="6"></div>
+            <div class="num" data-num="6" data-num-next="7"></div>
+            <div class="num" data-num="7" data-num-next="8"></div>
+            <div class="num" data-num="8" data-num-next="9"></div>
+            <div class="num" data-num="9" data-num-next="0"></div>
+          </div>
+        }
+      </div>
+    </div>
+    @if (canInstallApp() && false) {
       <section class="install-banner">
         <p>Install this app on your phone for faster access.</p>
         <div class="install-actions">
@@ -10,28 +46,60 @@
         </div>
       </section>
     }
-    <p class="status">{{ status() }}</p>
+    <p class="card">{{ status() }}</p>
+    <br />
     <p class="status">
       Connection is direct browser-to-browser. Only offer/answer text is exchanged externally.
     </p>
 
     <div class="video-stage">
-      <video #remoteVideo autoplay playsinline></video>
-      <video class="local-preview" #localVideo muted autoplay playsinline></video>
-      <audio #remoteAudio autoplay playsinline></audio>
+      <video 
+        #remoteVideo 
+        autoplay 
+        playsinline 
+        [muted]="!isMediaStarted()" 
+        [class.max-h-0]="!isMediaStarted()" 
+        [class.max-h-screen]="isMediaStarted()" 
+        class="transition-all duration-300 overflow-hidden"></video>
+      <video 
+        class="local-preview transition-all duration-300 overflow-hidden" 
+        #localVideo 
+        muted 
+        autoplay 
+        playsinline
+        [class.max-h-0]="!isMediaStarted()" 
+        [class.max-h-screen]="isMediaStarted()"></video>
+      <audio #remoteAudio autoplay playsinline [muted]="!isMediaStarted()"></audio>
     </div>
 
     <div class="controls">
-      <button type="button" (click)="startCameraAndMic()">Start media</button>
+      <button type="button" (click)="isMediaStarted.update(value => !value)">
+        {{ !isMediaStarted() ? 'Start media' : 'Stop media' }}
+      </button>
       <button type="button" (click)="createOffer()">Create offer</button>
       <button type="button" (click)="createAnswerFromOffer()">Create answer</button>
       <button type="button" (click)="applyRemoteAnswer()">Apply answer</button>
-      <button type="button" (click)="toggleMicrophone()">
-        {{ isMicEnabled() ? 'Mute mic' : 'Unmute mic' }}
-      </button>
-      <button type="button" (click)="toggleCamera()">
-        {{ isCamEnabled() ? 'Disable cam' : 'Enable cam' }}
-      </button>
+      
+      <div class="switch-holder">
+        <div class="switch-label">
+          <i class="fa fa-bluetooth-b"></i><span>Microfone</span>
+        </div>
+        <div class="switch-toggle">
+          <input type="checkbox" id="microfone" (click)="toggleMicrophone(); $event.preventDefault()" [checked]="isMicEnabled()">
+          <label for="microfone"></label>
+        </div>
+      </div>
+      
+      <div class="switch-holder">
+        <div class="switch-label">
+          <i class="fa fa-bluetooth-b"></i><span>Camera</span>
+        </div>
+        <div class="switch-toggle">
+          <input type="checkbox" id="camera" (click)="toggleCamera(); $event.preventDefault()" [checked]="isCamEnabled()">
+          <label for="camera"></label>
+        </div>
+      </div>
+      
       <button type="button" (click)="disconnect()">Disconnect</button>
     </div>
 
@@ -40,11 +108,13 @@
       <textarea
         [value]="localSignalText"
         readonly
+        rows="1"
         placeholder="Your generated offer/answer appears here."
       ></textarea>
-      <button type="button" (click)="copySignal()">Copy my signal</button>
+      <button type="button" (click)="copySignal()" class="mb-4">Copy my signal</button>
       <textarea
         [(ngModel)]="remoteSignalText"
+        rows="1"
         placeholder="Paste peer signal (offer or answer) here."
       ></textarea>
     </section>
@@ -59,9 +129,51 @@
         }
       </div>
       <div class="chat-form">
-        <input [(ngModel)]="outboundMessage" placeholder="Message" />
+        <input [(ngModel)]="outboundMessage" placeholder="Message" (keydown)="onKeyDown($event)" />
         <button type="button" (click)="sendMessage()">Send</button>
       </div>
     </section>
   </section>
+  @if (isLoading()) {
+    <svg height="128px" width="128px" viewBox="0 0 128 128" class="pl1 fixed top-[50%] left-[50%] -translate-1/2">
+      <defs>
+        <linearGradient y2="1" x2="1" y1="0" x1="0" id="pl-grad">
+          <stop stop-color="#000" offset="0%"></stop>
+          <stop stop-color="#fff" offset="100%"></stop>
+        </linearGradient>
+        <mask id="pl-mask">
+          <rect fill="url(#pl-grad)" height="128" width="128" y="0" x="0"></rect>
+        </mask>
+      </defs>
+      <g fill="var(--primary)">
+        <g class="pl1__g">
+          <g transform="translate(20,20) rotate(0,44,44)">
+            <g class="pl1__rect-g">
+              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+            </g>
+            <g transform="rotate(180,44,44)" class="pl1__rect-g">
+              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+            </g>
+          </g>
+        </g>
+      </g>
+      <g mask="url(#pl-mask)" fill="hsl(343,90%,50%)">
+        <g class="pl1__g">
+          <g transform="translate(20,20) rotate(0,44,44)">
+            <g class="pl1__rect-g">
+              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+            </g>
+            <g transform="rotate(180,44,44)" class="pl1__rect-g">
+              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+            </g>
+          </g>
+        </g>
+      </g>
+    </svg>
+  }
 </main>
+
