@@ -46,6 +46,7 @@
         </div>
       </section>
     }
+    <br/>
     <p class="card">{{ status() }}</p>
     <br />
     <p class="status">
@@ -80,7 +81,7 @@
       <button type="button" (click)="createAnswerFromOffer()">Create answer</button>
       <button type="button" (click)="applyRemoteAnswer()">Apply answer</button>
       
-      <div class="switch-holder">
+      <div class="switch-holder col-span-2 md:col-span-1">
         <div class="switch-label">
           <i class="fa fa-bluetooth-b"></i><span>Microfone</span>
         </div>
@@ -90,7 +91,7 @@
         </div>
       </div>
       
-      <div class="switch-holder">
+      <div class="switch-holder col-span-2 md:col-span-1">
         <div class="switch-label">
           <i class="fa fa-bluetooth-b"></i><span>Camera</span>
         </div>
@@ -106,6 +107,7 @@
     <section class="signal-section">
       <h3>Signal exchange (copy/paste)</h3>
       <textarea
+        class="overflow-hidden !resize-none"
         [value]="localSignalText"
         readonly
         rows="1"
@@ -113,6 +115,7 @@
       ></textarea>
       <button type="button" (click)="copySignal()" class="mb-4">Copy my signal</button>
       <textarea
+        class="overflow-hidden !resize-none"
         [(ngModel)]="remoteSignalText"
         rows="1"
         placeholder="Paste peer signal (offer or answer) here."
@@ -121,16 +124,22 @@
 
     <section class="chat">
       <h3>Text chat</h3>
-      <div class="messages">
+      <div class="messages" #scrollContainer>
         @for (message of chatMessages(); track $index) {
           <div class="message-row" [class.mine]="message.author === 'me'">
             <p class="message-bubble">{{ message.text }}</p>
           </div>
         }
       </div>
-      <div class="chat-form">
-        <input [(ngModel)]="outboundMessage" placeholder="Message" (keydown)="onKeyDown($event)" />
-        <button type="button" (click)="sendMessage()">Send</button>
+      <div class="chat-form !flex !flex-wrap items-center justify-between">
+        <textarea 
+          [(ngModel)]="outboundMessage" 
+          placeholder="Message" 
+          (keydown)="onKeyDown($event)" 
+          class="flex-1 overflow-hidden !resize-none"
+          rows="1"
+        ></textarea>
+        <button type="button" class="!px-6 max-h-11 flex items-center" (click)="sendMessage()">Send</button>
       </div>
     </section>
   </section>
@@ -145,7 +154,7 @@
           <rect fill="url(#pl-grad)" height="128" width="128" y="0" x="0"></rect>
         </mask>
       </defs>
-      <g fill="var(--primary)">
+      <g fill="rgb(226, 57, 241)">
         <g class="pl1__g">
           <g transform="translate(20,20) rotate(0,44,44)">
             <g class="pl1__rect-g">
@@ -159,7 +168,7 @@
           </g>
         </g>
       </g>
-      <g mask="url(#pl-mask)" fill="hsl(343,90%,50%)">
+      <g mask="url(#pl-mask)" fill="rgb(89, 92, 252)">
         <g class="pl1__g">
           <g transform="translate(20,20) rotate(0,44,44)">
             <g class="pl1__rect-g">

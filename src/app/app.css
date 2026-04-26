@@ -83,7 +83,7 @@ video {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
   margin-top: 1rem;
 }
@@ -119,12 +119,14 @@ button:active {
 
 textarea {
   width: 100%;
-  resize: vertical;
+  /* resize: vertical; */
   padding: 0.8rem;
   margin-bottom: 0.6rem;
 }
 
 .messages {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   min-height: 88px;
   max-height: 260px;
   overflow: auto;
@@ -137,6 +139,9 @@ textarea {
   box-shadow:
     inset 6px 6px 14px #c8d2df,
     inset -6px -6px 14px #fbffff;
+}
+.messages::-webkit-scrollbar {
+  display: none;
 }
 
 .message-row {
@@ -179,7 +184,7 @@ input {
 
 .switch-holder {
   display: flex;
-  padding: 10px 20px;
+  padding: 5px 20px;
   border-radius: 10px;
   box-shadow: -8px -8px 15px rgba(255, 255, 255, .7),
         10px 10px 10px rgba(0, 0, 0, .2),
@@ -247,7 +252,6 @@ input {
 
 button {
   color: #090909;
-  padding: 0.7em 1.7em;
   font-size: 18px;
   border-radius: 0.5em;
   background: #e8e8e8;
@@ -650,7 +654,6 @@ button:active {
 }
 
 @keyframes rotate {
-
   100% {
     transform: rotate(360deg);
   }

@@ -1,5 +1,6 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal  } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -24,14 +25,18 @@ const MIC_CONSTRAINTS: MediaTrackConstraints = {
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit, OnDestroy {
+export class App implements OnInit, OnDestroy  {
   @ViewChild('localVideo')
   private localVideoRef?: ElementRef<HTMLVideoElement>;
 
   @ViewChild('remoteVideo')
   private remoteVideoRef?: ElementRef<HTMLVideoElement>;
+
   @ViewChild('remoteAudio')
   private remoteAudioRef?: ElementRef<HTMLAudioElement>;
+
+  @ViewChild('scrollContainer') 
+  private myScrollContainer!: ElementRef;
 
   protected localSignalText = '';
   protected remoteSignalText = '';
@@ -67,6 +72,14 @@ export class App implements OnInit, OnDestroy {
   protected readonly closeInstallBanner = (): void => {
     this.canInstallApp.set(false);
   };
+
+
+  scrollToBottom(): void {
+    try {
+      this.myScrollContainer.nativeElement.scrollTop = 
+        this.myScrollContainer.nativeElement.scrollHeight;
+    } catch(err) { }
+  }
 
   ngOnInit(): void {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
@@ -151,7 +164,7 @@ export class App implements OnInit, OnDestroy {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await this.waitForIceGathering(pc, 4000);
-      this.localSignalText = JSON.stringify(pc.localDescription);
+      this.localSignalText = this.pack(JSON.stringify(pc.localDescription));
       this.status.set('Offer created. Share it with your peer.');
       this.isLoading.set(false);
     } catch (error) {
@@ -175,7 +188,7 @@ export class App implements OnInit, OnDestroy {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await this.waitForIceGathering(pc, 4000);
-      this.localSignalText = JSON.stringify(pc.localDescription);
+      this.localSignalText = this.pack(JSON.stringify(pc.localDescription));
       this.status.set('Answer created. Send it back to caller.');
       this.isLoading.set(false);
     } catch (error) {
@@ -216,6 +229,7 @@ export class App implements OnInit, OnDestroy {
 
     this.dataChannel.send(message);
     this.chatMessages.update((items) => [...items, { author: 'me', text: message }]);
+    setTimeout(() => this.scrollToBottom());
     this.outboundMessage = '';
   }
 
@@ -341,7 +355,7 @@ export class App implements OnInit, OnDestroy {
     channel.onopen = () => {
       this.switchOffMicrophone();
       this.switchOffCamera();
-      this.isTimerStarted();
+      this.isTimerStarted.set(true);
       this.status.set('Connected');
     };
     channel.onmessage = (event) => {
@@ -349,12 +363,13 @@ export class App implements OnInit, OnDestroy {
         ...items,
         { author: 'peer', text: String(event.data) }
       ]);
+      setTimeout(() => this.scrollToBottom());
     };
     return channel;
   }
 
   private parseSignalText(expectedType: 'offer' | 'answer'): RTCSessionDescriptionInit {
-    const parsed = JSON.parse(this.remoteSignalText) as RTCSessionDescriptionInit;
+    const parsed = JSON.parse(this.unpack(this.remoteSignalText)) as RTCSessionDescriptionInit;
     if (parsed.type !== expectedType || !parsed.sdp) {
       throw new Error(`Invalid ${expectedType}`);
     }
@@ -451,4 +466,47 @@ export class App implements OnInit, OnDestroy {
     return 'Unknown error';
   }
 
+  private pack(sdp: string): string {
+    if (!sdp) return "";
+    
+    const rawSdp = (typeof sdp === 'object') ? sdp['sdp'] : sdp;
+  
+    const lines = rawSdp.split(/\r?\n/);
+    const minified = lines
+      .map(line => line.trim())
+      .filter(line => {
+        if (line.length === 0) return false;
+  
+        const criticalPrefixes = [
+          'v=', 'o=', 's=', 't=', 'c=', 'm=', 
+          'a=setup', 'a=mid', 'a=ice-ufrag', 
+          'a=ice-pwd', 'a=fingerprint', 'a=sctp-port'
+        ];
+        
+        const isCritical = criticalPrefixes.some(p => line.startsWith(p));
+        
+        const isOpus = line.includes('a=rtpmap:') && line.toLowerCase().includes('opus');
+        const isCandidate = line.includes('a=candidate:') && line.toLowerCase().includes('udp');
+  
+        return isCritical || isOpus || isCandidate;
+      })
+      .join('\n');
+  
+    const compressed = deflateSync(strToU8(minified), { level: 9 });
+    let binary = '';
+    for (let i = 0; i < compressed.length; i++) {
+        binary += String.fromCharCode(compressed[i]);
+    }
+    return btoa(binary);
+  }
+
+  private unpack(packed: string): string {
+    const binary = atob(packed);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const decompressed = inflateSync(bytes);
+    return strFromU8(decompressed); 
+  }
 }
