@@ -46,7 +46,8 @@
         </div>
       </section>
     }
-    <br/>
+    
+    <br class="md:block" [class.hidden]="isTimerStarted()" />
     <p class="card">{{ status() }}</p>
     <br />
     <p class="status">
@@ -107,6 +108,7 @@
     <section class="signal-section">
       <h3>Signal exchange (copy/paste)</h3>
       <textarea
+        name="generated-signal"
         class="overflow-hidden !resize-none"
         [value]="localSignalText"
         readonly
@@ -115,6 +117,7 @@
       ></textarea>
       <button type="button" (click)="copySignal()" class="mb-4">Copy my signal</button>
       <textarea
+        name="received-signal"
         class="overflow-hidden !resize-none"
         [(ngModel)]="remoteSignalText"
         rows="1"
@@ -131,15 +134,16 @@
           </div>
         }
       </div>
-      <div class="chat-form !flex !flex-wrap items-center justify-between">
+      <div class="chat-form !flex !flex-wrap items-center justify-center">
         <textarea 
+          name="message-field"
           [(ngModel)]="outboundMessage" 
           placeholder="Message" 
           (keydown)="onKeyDown($event)" 
-          class="flex-1 overflow-hidden !resize-none"
+          class="flex-1 overflow-hidden !resize-none !mb-0"
           rows="1"
         ></textarea>
-        <button type="button" class="!px-6 max-h-11 flex items-center" (click)="sendMessage()">Send</button>
+        <button type="button" class="!px-6 flex items-center" (click)="sendMessage()">Send</button>
       </div>
     </section>
   </section>

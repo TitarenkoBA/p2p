@@ -172,8 +172,6 @@ textarea {
 
 .chat-form {
   margin-top: 0.65rem;
-  display: grid;
-  grid-template-columns: 1fr auto;
   gap: 0.65rem;
 }
 
@@ -247,7 +245,7 @@ input {
   color: #fff;
   background-color: #00b33c;
   box-shadow: -3px -3px 5px rgba(255, 255, 255, .5),
-        3px 3px 5px #00b33c;
+        3px 3px 5px rgba(0, 0, 0, .25);
 }
 
 button {
@@ -273,11 +271,11 @@ button:active {
 }
 
 .container-num {
-  height: 200px;
+  height: 100px;
   position: relative;
   text-align: center;
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
 .nums {
@@ -285,7 +283,7 @@ button:active {
     8px 8px 15px rgba(42, 42, 42, 0.2),
     -8px -8px 15px rgba(255, 255, 255, 0.5);
   display: inline-block;
-  height: 200px;
+  height: 100px;
   perspective: 1000px;
   position: relative;
   width: 140px;
@@ -312,7 +310,7 @@ button:active {
   color: #333;
   content: "0";
   display: block;
-  font-size: 145px;
+  font-size: 75px;
   height: calc(50% - 1px);
   left: 0;
   line-height: 0;
@@ -331,7 +329,7 @@ button:active {
   animation-iteration-count: infinite;
   animation-timing-function: ease-in;
   border-radius: 20px;
-  font-size: 145px;
+  font-size: 75px;
   height: 100%;
   left: 0;
   position: absolute;
@@ -620,8 +618,8 @@ button:active {
 }
 
 .loader-head {
-  width: 10rem;
-  height: 10rem;
+  width: 5rem;
+  height: 5rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -631,8 +629,8 @@ button:active {
 }
 
 .loader-head:before {
-  height: 4rem;
-  width: 4rem;
+  height: 2rem;
+  width: 2rem;
   content: "";
   position: absolute;
   top: 50%;
@@ -675,5 +673,32 @@ button:active {
 
   .install-actions {
     max-width: 360px;
+  }
+
+  .loader-head {
+    width: 10rem;
+    height: 10rem;
+  }
+  
+  .loader-head:before {
+    height: 4rem;
+    width: 4rem;
+  }
+
+  .container-num {
+    height: 200px;
+    gap: 20px;
+  }
+
+  .nums {
+    height: 200px;
+  }
+  
+  .nums:after {
+    font-size: 145px;
+  }
+  
+  .num {
+    font-size: 145px;
   }
 }

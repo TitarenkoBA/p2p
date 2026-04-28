@@ -1,6 +1,7 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal  } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal  } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
+import { ShortenerService } from './dataSharing.service';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -37,7 +38,7 @@ export class App implements OnInit, OnDestroy  {
 
   @ViewChild('scrollContainer') 
   private myScrollContainer!: ElementRef;
-
+  private readonly dataSharingService = inject(ShortenerService);
   protected localSignalText = '';
   protected remoteSignalText = '';
   protected outboundMessage = '';
@@ -164,7 +165,14 @@ export class App implements OnInit, OnDestroy  {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await this.waitForIceGathering(pc, 4000);
-      this.localSignalText = this.pack(JSON.stringify(pc.localDescription));
+      const packed = this.pack(JSON.stringify(pc.localDescription));
+
+      try {
+        const url = await this.dataSharingService.createLink(packed);
+        this.localSignalText = url;
+      } catch(err) {
+        this.localSignalText = packed;
+      }
       this.status.set('Offer created. Share it with your peer.');
       this.isLoading.set(false);
     } catch (error) {
@@ -180,7 +188,7 @@ export class App implements OnInit, OnDestroy  {
       this.disconnect(false, false);
       this.status.set('Creating answer...');
 
-      const remoteOffer = this.parseSignalText('offer');
+      const remoteOffer = await this.processRemoteSignal(this.remoteSignalText, 'offer');
       const pc = this.buildPeerConnection();
       this.attachLocalTracks(pc);
       await pc.setRemoteDescription(remoteOffer);
@@ -188,7 +196,13 @@ export class App implements OnInit, OnDestroy  {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await this.waitForIceGathering(pc, 4000);
-      this.localSignalText = this.pack(JSON.stringify(pc.localDescription));
+      const packed = this.pack(JSON.stringify(pc.localDescription));
+      try {
+        const url = await this.dataSharingService.createLink(packed);
+        this.localSignalText = url;
+      } catch(err) {
+        this.localSignalText = packed;
+      }
       this.status.set('Answer created. Send it back to caller.');
       this.isLoading.set(false);
     } catch (error) {
@@ -206,7 +220,7 @@ export class App implements OnInit, OnDestroy  {
         return;
       }
 
-      const remoteAnswer = this.parseSignalText('answer');
+      const remoteAnswer = await this.processRemoteSignal(this.remoteSignalText, 'answer');
       await this.peerConnection.setRemoteDescription(remoteAnswer);
       this.status.set('Remote answer applied');
       this.isLoading.set(false);
@@ -368,8 +382,36 @@ export class App implements OnInit, OnDestroy  {
     return channel;
   }
 
-  private parseSignalText(expectedType: 'offer' | 'answer'): RTCSessionDescriptionInit {
-    const parsed = JSON.parse(this.unpack(this.remoteSignalText)) as RTCSessionDescriptionInit;
+  private async processRemoteSignal(receivedUrl: string, expectedType: 'offer' | 'answer') {
+    try {
+      let localSignalText = this.localSignalText;
+      if (receivedUrl.startsWith('https')) {
+        try {
+          const dataFromLink = await this.dataSharingService.getData(receivedUrl);
+          localSignalText = dataFromLink;
+        } catch(err) {
+          localSignalText = receivedUrl;
+        }
+      } else {
+        localSignalText = receivedUrl;
+      }
+
+      const parsed = this.parseSignalText(localSignalText, expectedType);
+
+      return parsed;
+
+    } catch (err: any) {
+      if (err.name === 'TimeoutError') {
+        console.error('Ошибка: Сервис не ответил вовремя (таймаут)');
+      } else {
+        console.error('Ошибка при получении или парсинге данных:', err);
+      }
+      throw err; 
+    }
+  }
+
+  private parseSignalText(rawString: string, expectedType: 'offer' | 'answer'): RTCSessionDescriptionInit {
+    const parsed = JSON.parse(this.unpack(rawString)) as RTCSessionDescriptionInit;
     if (parsed.type !== expectedType || !parsed.sdp) {
       throw new Error(`Invalid ${expectedType}`);
     }
