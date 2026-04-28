@@ -39,6 +39,7 @@ export class App implements OnInit, OnDestroy  {
   @ViewChild('scrollContainer') 
   private myScrollContainer!: ElementRef;
   private readonly dataSharingService = inject(ShortenerService);
+  protected localSignalBase64 = '';
   protected localSignalText = '';
   protected remoteSignalText = '';
   protected outboundMessage = '';
@@ -167,6 +168,7 @@ export class App implements OnInit, OnDestroy  {
       await this.waitForIceGathering(pc, 4000);
       const packed = this.pack(JSON.stringify(pc.localDescription));
 
+      this.localSignalBase64 = packed;
       try {
         const url = await this.dataSharingService.createLink(packed);
         this.localSignalText = url;
@@ -197,6 +199,7 @@ export class App implements OnInit, OnDestroy  {
       await pc.setLocalDescription(answer);
       await this.waitForIceGathering(pc, 4000);
       const packed = this.pack(JSON.stringify(pc.localDescription));
+      this.localSignalBase64 = packed;
       try {
         const url = await this.dataSharingService.createLink(packed);
         this.localSignalText = url;
@@ -320,6 +323,7 @@ export class App implements OnInit, OnDestroy  {
     if (resetSignal) {
       this.remoteSignalText = '';
       this.localSignalText = '';
+      this.localSignalBase64 = '';
     }
     if (updateStatus) {
       this.status.set('Not connected');
@@ -390,7 +394,7 @@ export class App implements OnInit, OnDestroy  {
           const dataFromLink = await this.dataSharingService.getData(receivedUrl);
           localSignalText = dataFromLink;
         } catch(err) {
-          localSignalText = receivedUrl;
+          localSignalText = this.localSignalBase64;
         }
       } else {
         localSignalText = receivedUrl;
