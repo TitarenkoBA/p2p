@@ -1,43 +1,26 @@
 <main class="page">
   <section class="card">
-    <div class="flex md:flex-row flex-col items-center justify-between w-full mg:max-h-[200px]">
+    <div class="hidden md:flex md:flex-row items-center justify-between w-full mg:max-h-[200px] mb-2">
       <h1 class="flex flex-1">
         P2P Room
       </h1>
       <div class="loader-head">
         <span></span>
       </div>
-      <div class="container-num scale-50 min-w-[20px] flex-1 flex justify-end">
-        @if (isTimerStarted()) {
-          <div class="nums nums-ten">
-            <div class="num" data-num="0" data-num-next="1"></div>
-            <div class="num" data-num="1" data-num-next="2"></div>
-            <div class="num" data-num="2" data-num-next="3"></div>
-            <div class="num" data-num="3" data-num-next="4"></div>
-            <div class="num" data-num="4" data-num-next="5"></div>
-            <div class="num" data-num="5" data-num-next="6"></div>
-            <div class="num" data-num="6" data-num-next="7"></div>
-            <div class="num" data-num="7" data-num-next="8"></div>
-            <div class="num" data-num="8" data-num-next="9"></div>
-            <div class="num" data-num="9" data-num-next="0"></div>
-          </div>
-  
-          <div class="nums nums-one">
-            <div class="num" data-num="0" data-num-next="1"></div>
-            <div class="num" data-num="1" data-num-next="2"></div>
-            <div class="num" data-num="2" data-num-next="3"></div>
-            <div class="num" data-num="3" data-num-next="4"></div>
-            <div class="num" data-num="4" data-num-next="5"></div>
-            <div class="num" data-num="5" data-num-next="6"></div>
-            <div class="num" data-num="6" data-num-next="7"></div>
-            <div class="num" data-num="7" data-num-next="8"></div>
-            <div class="num" data-num="8" data-num-next="9"></div>
-            <div class="num" data-num="9" data-num-next="0"></div>
-          </div>
-        }
+      <clock class="flex items-center justify-end flex-1 mt-2 md:md-0"/>
+    </div>
+    <div class="flex md:hidden flex-col items-center justify-between w-full mg:max-h-[200px] mb-2">
+      <h1 class="flex flex-1">
+        P2P Room
+      </h1>
+      <div class="flex w-full items-center justify-center">
+        <div class="loader-head">
+          <span></span>
+        </div>
+        <clock class="flex items-center justify-end flex-1 mt-2 md:md-0"/>
       </div>
     </div>
-    @if (canInstallApp() && false) {
+    @if (canInstallApp()) {
       <section class="install-banner">
         <p>Install this app on your phone for faster access.</p>
         <div class="install-actions">
@@ -47,12 +30,39 @@
       </section>
     }
     
-    <br class="md:block" [class.hidden]="isTimerStarted()" />
+    <br class="hidden md:block" />
     <p class="card">{{ status() }}</p>
     <br />
     <p class="status">
       Connection is direct browser-to-browser. Only offer/answer text is exchanged externally.
     </p>
+
+    <div class="controls">
+      <button type="button" (click)="createOffer()">Create offer</button>
+      <button type="button" (click)="createAnswerFromOffer()">Create answer</button>
+      <button type="button" (click)="applyRemoteAnswer()">Apply answer</button>
+      <button type="button" (click)="disconnect()">Disconnect</button>
+    </div>
+
+    <section class="signal-section">
+      <h3>Signal exchange (copy/paste)</h3>
+      <textarea
+        name="generated-signal"
+        class="overflow-hidden !resize-none"
+        [value]="localSignalText"
+        readonly
+        rows="1"
+        placeholder="Your generated offer/answer appears here."
+      ></textarea>
+      <button type="button" (click)="copySignal()" class="mb-4">Copy my signal</button>
+      <textarea
+        name="received-signal"
+        class="overflow-hidden !resize-none"
+        [(ngModel)]="remoteSignalText"
+        rows="1"
+        placeholder="Paste peer signal (offer or answer) here."
+      ></textarea>
+    </section>
 
     <div class="video-stage">
       <video 
@@ -78,9 +88,6 @@
       <button type="button" (click)="isMediaStarted.update(value => !value)">
         {{ !isMediaStarted() ? 'Start media' : 'Stop media' }}
       </button>
-      <button type="button" (click)="createOffer()">Create offer</button>
-      <button type="button" (click)="createAnswerFromOffer()">Create answer</button>
-      <button type="button" (click)="applyRemoteAnswer()">Apply answer</button>
       
       <div class="switch-holder col-span-2 md:col-span-1">
         <div class="switch-label">
@@ -102,28 +109,8 @@
         </div>
       </div>
       
-      <button type="button" (click)="disconnect()">Disconnect</button>
+      
     </div>
-
-    <section class="signal-section">
-      <h3>Signal exchange (copy/paste)</h3>
-      <textarea
-        name="generated-signal"
-        class="overflow-hidden !resize-none"
-        [value]="localSignalText"
-        readonly
-        rows="1"
-        placeholder="Your generated offer/answer appears here."
-      ></textarea>
-      <button type="button" (click)="copySignal()" class="mb-4">Copy my signal</button>
-      <textarea
-        name="received-signal"
-        class="overflow-hidden !resize-none"
-        [(ngModel)]="remoteSignalText"
-        rows="1"
-        placeholder="Paste peer signal (offer or answer) here."
-      ></textarea>
-    </section>
 
     <section class="chat">
       <h3>Text chat</h3>

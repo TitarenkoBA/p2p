@@ -2,6 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal  } 
 import { FormsModule } from '@angular/forms';
 import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
 import { ShortenerService } from './dataSharing.service';
+import { ClockComponent } from './clock.component';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -22,7 +23,7 @@ const MIC_CONSTRAINTS: MediaTrackConstraints = {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule],
+  imports: [FormsModule, ClockComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
