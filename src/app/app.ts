@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal  } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, effect, inject, signal  } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
 import { ShortenerService } from './dataSharing.service';
@@ -76,7 +76,14 @@ export class App implements OnInit, OnDestroy  {
     this.canInstallApp.set(false);
   };
 
-
+  constructor() {
+    effect(() => {
+      const status = this.status();
+      if (status?.includes('disconnected') || status?.includes('Not connected') || status?.includes('failed')) {
+        this.isTimerStarted.set(false)
+      }
+    })
+  }
   scrollToBottom(): void {
     try {
       this.myScrollContainer.nativeElement.scrollTop = 

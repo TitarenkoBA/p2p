@@ -1,5 +1,4 @@
 import { inject, Injectable, NgZone } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
 export class ShortenerService {
@@ -15,16 +14,16 @@ export class ShortenerService {
 
   async getData(fullUrl: string): Promise<string> {
     return await this.zone.runOutsideAngular(() =>
-      this.withProxyRetry((url) => this.requestWithHardTimeout(url, 5000))
+      this.withProxyRetry((url) => this.requestWithHardTimeout(url, 5000), fullUrl)
     );
   }
 
-  private async withProxyRetry(requestFn: (url: string) => Promise<string>): Promise<string> {
+  private async withProxyRetry(requestFn: (url: string) => Promise<string>, fullUrl?: string): Promise<string> {
     try {
-      return await requestFn(this.workerUrl);
+      return await requestFn(fullUrl ?? this.workerUrl);
     } catch (e) {
       console.warn('Первая попытка не удалась, идем в прокси...', e);
-      const proxyUrl = `https://corsproxy.io?${encodeURIComponent(this.workerUrl)}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(fullUrl ?? this.workerUrl)}`;
       return await requestFn(proxyUrl);
     }
   }

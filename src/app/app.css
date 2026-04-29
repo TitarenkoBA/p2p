@@ -393,11 +393,19 @@ button:active {
   box-shadow: inset -5px -5px 9px rgba(255,255,255,0.45), 5px 5px 9px rgba(94,104,121,0.3);
 }
 
-.loader-head span {
+.loader-head:not(.disabled) span {
   width: 80%;
   height: 80%;
   border-radius: 50%;
   background: linear-gradient(to bottom, rgb(89, 92, 252), rgb(226, 57, 241));
+  animation: rotate 1s infinite linear;
+}
+
+.loader-head span {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background: #24304110;
   animation: rotate 1s infinite linear;
 }
 
