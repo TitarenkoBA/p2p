@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
 import { ShortenerService } from './dataSharing.service';
 import { ClockComponent } from './clock.component';
+import { AudioService } from './audio.service';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -40,6 +41,7 @@ export class App implements OnInit, OnDestroy  {
   @ViewChild('scrollContainer') 
   private myScrollContainer!: ElementRef;
   private readonly dataSharingService = inject(ShortenerService);
+  public readonly audioService = inject(AudioService);
   protected localSignalBase64 = '';
   protected localSignalText = '';
   protected remoteSignalText = '';
@@ -73,6 +75,7 @@ export class App implements OnInit, OnDestroy  {
   };
 
   protected readonly closeInstallBanner = (): void => {
+    this.audioService.play('click');
     this.canInstallApp.set(false);
   };
 
@@ -105,6 +108,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected async installApp(): Promise<void> {
+    this.audioService.play('click');
     if (!this.installPromptEvent) {
       return;
     }
@@ -157,6 +161,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected async createOffer(): Promise<void> {
+    this.audioService.play('click');
     this.isLoading.set(true);
     try {
       if (!window.RTCPeerConnection) {
@@ -192,6 +197,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected async createAnswerFromOffer(): Promise<void> {
+    this.audioService.play('click');
     this.isLoading.set(true);
     try {
       await this.startCameraAndMic();
@@ -223,6 +229,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected async applyRemoteAnswer(): Promise<void> {
+    this.audioService.play('click');
     this.isLoading.set(true);
     try {
       if (!this.peerConnection || !this.peerConnection.localDescription) {
@@ -247,6 +254,7 @@ export class App implements OnInit, OnDestroy  {
     }
   }
   protected sendMessage(): void {
+    this.audioService.play('send-message');
     const message = this.outboundMessage.trim();
     if (!message || this.dataChannel?.readyState !== 'open') {
       return;
@@ -259,6 +267,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected toggleMicrophone(): void {
+    this.audioService.play('click');
     if (!this.localStream) {
       return;
     }
@@ -282,6 +291,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected toggleCamera(): void {
+    this.audioService.play('click');
     if (!this.localStream) {
       return;
     }
@@ -313,6 +323,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected async copySignal(): Promise<void> {
+    this.audioService.play('click');
     if (!this.localSignalText) {
       return;
     }
@@ -322,6 +333,7 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected disconnect(resetSignal = true, updateStatus = true): void {
+    this.audioService.play('click');
     this.peerConnection?.close();
     this.peerConnection = undefined;
     this.dataChannel = undefined;
@@ -382,6 +394,7 @@ export class App implements OnInit, OnDestroy  {
       this.switchOffMicrophone();
       this.switchOffCamera();
       this.isTimerStarted.set(true);
+      this.audioService.play('connected');
       this.status.set('Connected');
     };
     channel.onmessage = (event) => {
@@ -389,6 +402,7 @@ export class App implements OnInit, OnDestroy  {
         ...items,
         { author: 'peer', text: String(event.data) }
       ]);
+      this.audioService.play('notification');
       setTimeout(() => this.scrollToBottom());
     };
     return channel;
@@ -397,7 +411,7 @@ export class App implements OnInit, OnDestroy  {
   private async processRemoteSignal(receivedUrl: string, expectedType: 'offer' | 'answer') {
     try {
       let localSignalText = this.localSignalText;
-      if (receivedUrl.startsWith('https')) {
+      if (receivedUrl.startsWith('link-')) {
         try {
           const dataFromLink = await this.dataSharingService.getData(receivedUrl);
           localSignalText = dataFromLink;

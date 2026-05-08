@@ -85,7 +85,7 @@
     </div>
 
     <div class="controls">
-      <button type="button" (click)="isMediaStarted.update(value => !value)">
+      <button type="button" (click)="isMediaStarted.update(value => !value); audioService.play('click')">
         {{ !isMediaStarted() ? 'Start media' : 'Stop media' }}
       </button>
       
@@ -109,6 +109,15 @@
         </div>
       </div>
       
+      <div class="switch-holder col-span-2 md:col-span-1">
+        <div class="switch-label">
+          <i class="fa fa-bluetooth-b"></i><span>Sound</span>
+        </div>
+        <div class="switch-toggle">
+          <input type="checkbox" id="sound" (click)="audioService.toggleMute(); $event.preventDefault();audioService.play('click')" [checked]="!audioService.isMuted()">
+          <label for="sound"></label>
+        </div>
+      </div>
       
     </div>
 

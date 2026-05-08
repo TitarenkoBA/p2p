@@ -7,25 +7,19 @@ export class ShortenerService {
 
   async createLink(longString: string): Promise<string> {
     const id = await this.zone.runOutsideAngular(() =>
-      this.withProxyRetry((url) => this.requestWithHardTimeout(url, 5000, 'POST', longString))
+      this.requestWithHardTimeout(this.workerUrl, 5000, 'POST', longString)
     );
-    return `${this.workerUrl}${id}`;
+    return `link-${id}`;
   }
 
   async getData(fullUrl: string): Promise<string> {
-    return await this.zone.runOutsideAngular(() =>
-      this.withProxyRetry((url) => this.requestWithHardTimeout(url, 5000), fullUrl)
-    );
-  }
-
-  private async withProxyRetry(requestFn: (url: string) => Promise<string>, fullUrl?: string): Promise<string> {
-    try {
-      return await requestFn(fullUrl ?? this.workerUrl);
-    } catch (e) {
-      console.warn('Первая попытка не удалась, идем в прокси...', e);
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(fullUrl ?? this.workerUrl)}`;
-      return await requestFn(proxyUrl);
+    if (fullUrl.startsWith('link-')) {
+      fullUrl = `${this.workerUrl}${fullUrl.slice(5)}`;
+      console.log(fullUrl);
     }
+    return await this.zone.runOutsideAngular(() =>
+      this.requestWithHardTimeout(fullUrl, 5000)
+    );
   }
 
   private async requestWithHardTimeout(
