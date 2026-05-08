@@ -41,7 +41,7 @@
       <button type="button" (click)="createOffer()">Create offer</button>
       <button type="button" (click)="createAnswerFromOffer()">Create answer</button>
       <button type="button" (click)="applyRemoteAnswer()">Apply answer</button>
-      <button type="button" (click)="disconnect()">Disconnect</button>
+      <button type="button" (click)="disconnect();audioService.play('click');">Disconnect</button>
     </div>
 
     <section class="signal-section">

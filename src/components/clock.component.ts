@@ -24,7 +24,8 @@ import { timer, Subscription } from 'rxjs';
         justify-content: center;
     }
     .clock-display {
-        color: #243041;
+        color: #999;
+        text-shadow: 2px 2px 0px #fff;
         width: 100%;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         font-size: 1.5rem;

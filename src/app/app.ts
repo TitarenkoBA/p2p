@@ -1,9 +1,9 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, effect, inject, signal  } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
-import { ShortenerService } from './dataSharing.service';
-import { ClockComponent } from './clock.component';
-import { AudioService } from './audio.service';
+import { ShortenerService } from '../services/dataSharing.service';
+import { ClockComponent } from '../components/clock.component';
+import { AudioService } from '../services/audio.service';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -28,7 +28,7 @@ const MIC_CONSTRAINTS: MediaTrackConstraints = {
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit, OnDestroy  {
+export class App implements OnInit, OnDestroy {
   @ViewChild('localVideo')
   private localVideoRef?: ElementRef<HTMLVideoElement>;
 
@@ -38,7 +38,7 @@ export class App implements OnInit, OnDestroy  {
   @ViewChild('remoteAudio')
   private remoteAudioRef?: ElementRef<HTMLAudioElement>;
 
-  @ViewChild('scrollContainer') 
+  @ViewChild('scrollContainer')
   private myScrollContainer!: ElementRef;
   private readonly dataSharingService = inject(ShortenerService);
   public readonly audioService = inject(AudioService);
@@ -83,15 +83,16 @@ export class App implements OnInit, OnDestroy  {
     effect(() => {
       const status = this.status();
       if (status?.includes('disconnected') || status?.includes('Not connected') || status?.includes('failed')) {
-        this.isTimerStarted.set(false)
+        this.isTimerStarted.set(false);
+        this.audioService.play('disconnected');
       }
     })
   }
   scrollToBottom(): void {
     try {
-      this.myScrollContainer.nativeElement.scrollTop = 
+      this.myScrollContainer.nativeElement.scrollTop =
         this.myScrollContainer.nativeElement.scrollHeight;
-    } catch(err) { }
+    } catch (err) { }
   }
 
   ngOnInit(): void {
@@ -185,13 +186,15 @@ export class App implements OnInit, OnDestroy  {
       try {
         const url = await this.dataSharingService.createLink(packed);
         this.localSignalText = url;
-      } catch(err) {
+      } catch (err) {
         this.localSignalText = packed;
       }
       this.status.set('Offer created. Share it with your peer.');
+      this.audioService.play('notification');
       this.isLoading.set(false);
     } catch (error) {
       this.status.set(`Failed to create offer: ${this.getErrorMessage(error)}`);
+      this.audioService.play('disconnected');
       this.isLoading.set(false);
     }
   }
@@ -217,13 +220,15 @@ export class App implements OnInit, OnDestroy  {
       try {
         const url = await this.dataSharingService.createLink(packed);
         this.localSignalText = url;
-      } catch(err) {
+      } catch (err) {
         this.localSignalText = packed;
       }
       this.status.set('Answer created. Send it back to caller.');
+      this.audioService.play('notification');
       this.isLoading.set(false);
     } catch (error) {
       this.status.set(`Failed to create answer: ${this.getErrorMessage(error)}`);
+      this.audioService.play('disconnected');
       this.isLoading.set(false);
     }
   }
@@ -333,7 +338,6 @@ export class App implements OnInit, OnDestroy  {
   }
 
   protected disconnect(resetSignal = true, updateStatus = true): void {
-    this.audioService.play('click');
     this.peerConnection?.close();
     this.peerConnection = undefined;
     this.dataChannel = undefined;
@@ -415,7 +419,7 @@ export class App implements OnInit, OnDestroy  {
         try {
           const dataFromLink = await this.dataSharingService.getData(receivedUrl);
           localSignalText = dataFromLink;
-        } catch(err) {
+        } catch (err) {
           localSignalText = this.localSignalBase64;
         }
       } else {
@@ -432,7 +436,7 @@ export class App implements OnInit, OnDestroy  {
       } else {
         console.error('Ошибка при получении или парсинге данных:', err);
       }
-      throw err; 
+      throw err;
     }
   }
 
@@ -536,34 +540,34 @@ export class App implements OnInit, OnDestroy  {
 
   private pack(sdp: string): string {
     if (!sdp) return "";
-    
+
     const rawSdp = (typeof sdp === 'object') ? sdp['sdp'] : sdp;
-  
+
     const lines = rawSdp.split(/\r?\n/);
     const minified = lines
       .map(line => line.trim())
       .filter(line => {
         if (line.length === 0) return false;
-  
+
         const criticalPrefixes = [
-          'v=', 'o=', 's=', 't=', 'c=', 'm=', 
-          'a=setup', 'a=mid', 'a=ice-ufrag', 
+          'v=', 'o=', 's=', 't=', 'c=', 'm=',
+          'a=setup', 'a=mid', 'a=ice-ufrag',
           'a=ice-pwd', 'a=fingerprint', 'a=sctp-port'
         ];
-        
+
         const isCritical = criticalPrefixes.some(p => line.startsWith(p));
-        
+
         const isOpus = line.includes('a=rtpmap:') && line.toLowerCase().includes('opus');
         const isCandidate = line.includes('a=candidate:') && line.toLowerCase().includes('udp');
-  
+
         return isCritical || isOpus || isCandidate;
       })
       .join('\n');
-  
+
     const compressed = deflateSync(strToU8(minified), { level: 9 });
     let binary = '';
     for (let i = 0; i < compressed.length; i++) {
-        binary += String.fromCharCode(compressed[i]);
+      binary += String.fromCharCode(compressed[i]);
     }
     return btoa(binary);
   }
@@ -575,6 +579,6 @@ export class App implements OnInit, OnDestroy  {
       bytes[i] = binary.charCodeAt(i);
     }
     const decompressed = inflateSync(bytes);
-    return strFromU8(decompressed); 
+    return strFromU8(decompressed);
   }
 }

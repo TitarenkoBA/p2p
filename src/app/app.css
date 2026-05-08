@@ -2,7 +2,8 @@
   min-height: 100vh;
   padding: 1rem;
   background: #e8e8e8;
-  color: #243041;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
@@ -26,7 +27,8 @@ h3 {
 
 .status {
   margin: 0 0 1rem;
-  color: #51627c;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
 }
 
 .install-banner {
@@ -41,7 +43,8 @@ h3 {
 
 .install-banner p {
   margin: 0 0 0.6rem;
-  color: #425570;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
 }
 
 .install-actions {
@@ -94,7 +97,8 @@ textarea {
   border: 0;
   border-radius: 14px;
   font: inherit;
-  color: #243041;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
   background: #e8e8e8;
   box-shadow:
     6px 6px 14px #c8d2df,
@@ -159,7 +163,8 @@ textarea {
   padding: 0.55rem 0.75rem;
   border-radius: 14px;
   background: #dde5f0;
-  color: #243041;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
   box-shadow:
     5px 5px 10px #c7d1de,
     -5px -5px 10px #f8ffff;
@@ -243,12 +248,14 @@ input {
   content: 'ON';
   color: #fff;
   background-color: #00b33c;
+  text-shadow: none;
   box-shadow: -3px -3px 5px rgba(255, 255, 255, .5),
         3px 3px 5px rgba(0, 0, 0, .25);
 }
 
 button {
-  color: #090909;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
   font-size: 18px;
   border-radius: 0.5em;
   background: #e8e8e8;
@@ -261,7 +268,8 @@ button {
 }
 
 button:active {
-  color: #666;
+  color: #545454;
+  text-shadow: 2px 2px 0px #fff;
   box-shadow:
     0px 0px 0px #c5c5c5,
     0px 0px 0px #ffffff,
