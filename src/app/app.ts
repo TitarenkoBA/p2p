@@ -4,6 +4,7 @@ import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
 import { ShortenerService } from '../services/dataSharing.service';
 import { ClockComponent } from '../components/clock.component';
 import { AudioService } from '../services/audio.service';
+import { RangeComponent } from '../components/range/range.component';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -24,7 +25,7 @@ const MIC_CONSTRAINTS: MediaTrackConstraints = {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, ClockComponent],
+  imports: [FormsModule, ClockComponent, RangeComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

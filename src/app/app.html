@@ -121,6 +121,10 @@
       
     </div>
 
+    <div class="flex items-center justify-start mt-4 w-full">
+      <range (finalChange)="audioService.setVolume($event)" [value]="audioService.volume()" [min]="0" [max]="1" [step]="0.01"></range>
+    </div>
+
     <section class="chat">
       <h3>Text chat</h3>
       <div class="messages" #scrollContainer>

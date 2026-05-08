@@ -1,0 +1,67 @@
+$bg-color: #e8e8e8;
+$shadow-light: #ffffff;
+$shadow-dark: #a3b1c6;
+$accent-color: #00000080;
+
+.range-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: $bg-color;
+    padding: 30px;
+    border-radius: 20px;
+}
+
+.neo-range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 12px;
+    border-radius: 10px;
+    background: $bg-color;
+    // Эффект "вдавленности" для дорожки
+    box-shadow: inset 6px 6px 12px $shadow-dark,
+        inset -6px -6px 12px $shadow-light;
+    outline: none;
+    cursor: pointer;
+
+    background-image: linear-gradient($accent-color, $accent-color);
+    background-repeat: no-repeat;
+
+    // Стили для бегунка (Chrome/Safari)
+    &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: $bg-color;
+        // Эффект "выпуклости" для бегунка
+        box-shadow: 4px 4px 8px $shadow-dark,
+            -4px -4px 8px $shadow-light;
+        border: 2px solid rgba($accent-color, 0.1);
+        transition: all 0.2s ease;
+
+        &:active {
+            box-shadow: inset 2px 2px 5px $shadow-dark,
+                inset -2px -2px 5px $shadow-light;
+            transform: scale(0.95);
+        }
+    }
+
+    // Для Firefox
+    &::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: $bg-color;
+        box-shadow: 4px 4px 8px $shadow-dark, -4px -4px 8px $shadow-light;
+        border: none;
+    }
+}
+
+.value-display {
+    margin-top: 20px;
+    font-family: sans-serif;
+    color: #444;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px $shadow-light;
+}

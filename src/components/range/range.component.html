@@ -1,0 +1,14 @@
+<div class="range-container md:!px-auto !px-0">
+    <input 
+        type="range" 
+        [min]="min()" 
+        [max]="max()" 
+        [step]="step()"
+        [value]="value()"
+        (input)="onInput($event)"
+        (change)="onChange($event)"
+        [style.background-size]="backgroundSize()"
+        class="neo-range"
+    >
+  </div>
+  
