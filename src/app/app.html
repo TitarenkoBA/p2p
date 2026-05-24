@@ -34,34 +34,50 @@
     <p class="card">{{ status() }}</p>
     <br />
     <p class="status">
-      Connection is direct browser-to-browser. Only offer/answer text is exchanged externally.
+      @if (isProduction) {
+        Signaling: {{ peerJs.signalingServer }} (Hugging Face). Media and chat are peer-to-peer.
+      } @else {
+        Signaling: {{ peerJs.signalingServer }} — локально: <code>npm run peer-server</code> + Loophole. Media and chat are peer-to-peer.
+      }
     </p>
 
     <div class="controls">
-      <button type="button" (click)="createOffer()">Create offer</button>
-      <button type="button" (click)="createAnswerFromOffer()">Create answer</button>
-      <button type="button" (click)="applyRemoteAnswer()">Apply answer</button>
-      <button type="button" (click)="disconnect();audioService.play('click');">Disconnect</button>
+      <button type="button" (click)="createRoom()">Create room</button>
+      <button type="button" (click)="joinRoom()">Join room</button>
+      <button type="button" (click)="disconnect(); audioService.play('click')">Disconnect</button>
     </div>
 
     <section class="signal-section">
-      <h3>Signal exchange (copy/paste)</h3>
+      <h3>Peer ID</h3>
       <textarea
-        name="generated-signal"
+        name="my-peer-id"
         class="overflow-hidden !resize-none"
-        [value]="localSignalText"
+        [value]="myPeerId() ?? ''"
         readonly
         rows="1"
-        placeholder="Your generated offer/answer appears here."
+        placeholder="Create a room to get your Peer ID."
       ></textarea>
-      <button type="button" (click)="copySignal()" class="mb-4">Copy my signal</button>
-      <textarea
-        name="received-signal"
-        class="overflow-hidden !resize-none"
-        [(ngModel)]="remoteSignalText"
-        rows="1"
-        placeholder="Paste peer signal (offer or answer) here."
-      ></textarea>
+      <button type="button" (click)="copyPeerId()" class="mb-4">Copy my Peer ID</button>
+
+      <label class="block mb-1 text-sm opacity-80" for="custom-room-id">Custom room ID (optional, host only)</label>
+      <input
+        id="custom-room-id"
+        name="custom-room-id"
+        type="text"
+        class="w-full mb-4"
+        [(ngModel)]="customRoomId"
+        placeholder="Leave empty for a random ID"
+      />
+
+      <label class="block mb-1 text-sm opacity-80" for="remote-peer-id">Remote Peer ID</label>
+      <input
+        id="remote-peer-id"
+        name="remote-peer-id"
+        type="text"
+        class="w-full"
+        [(ngModel)]="remotePeerId"
+        placeholder="Paste host Peer ID to join"
+      />
     </section>
 
     <div class="video-stage">
@@ -189,4 +205,3 @@
     </svg>
   }
 </main>
-
