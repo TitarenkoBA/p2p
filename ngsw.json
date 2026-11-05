@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1779639383070,
+  "timestamp": 1793900455214,
   "index": "./index.html",
   "assetGroups": [
     {
@@ -12,9 +12,9 @@
       },
       "urls": [
         "./index.html",
-        "./main-DEVK6BJC.js",
+        "./main-3JHCC2IY.js",
         "./manifest.webmanifest",
-        "./styles-RCAW533A.css"
+        "./styles-POSZTEBJ.css"
       ],
       "patterns": []
     },
@@ -26,22 +26,40 @@
         "ignoreVary": true
       },
       "urls": [
+        "./assets/sounds/error-in-the-computer.mp3",
+        "./assets/sounds/mixkit-arcade-game-jump-coin-216.wav",
+        "./assets/sounds/mixkit-mouse-click-close-1113.wav",
+        "./assets/sounds/mixkit-typewriter-soft-click-1125.wav",
+        "./assets/sounds/notification-sound.mp3",
         "./favicon.ico",
+        "./icons/apple-touch-icon.png",
+        "./icons/icon-192.png",
         "./icons/icon-192.svg",
-        "./icons/icon-512.svg"
+        "./icons/icon-512.png",
+        "./icons/icon-512.svg",
+        "./icons/icon-maskable-512.png"
       ],
       "patterns": []
     }
   ],
   "dataGroups": [],
   "hashTable": {
+    "./assets/sounds/error-in-the-computer.mp3": "a7fd0a0faee3065733bc6db805ae21e212755deb",
+    "./assets/sounds/mixkit-arcade-game-jump-coin-216.wav": "8d1ef16f7dce8ecb9cf80824c18840a08e498309",
+    "./assets/sounds/mixkit-mouse-click-close-1113.wav": "cc9b680789260f547114a744fab86f9f91a6d8d2",
+    "./assets/sounds/mixkit-typewriter-soft-click-1125.wav": "ca7bde83a84649cef88569ff321112052421fb79",
+    "./assets/sounds/notification-sound.mp3": "e88a0da33804715955c93649cad176900c2a017a",
     "./favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
+    "./icons/apple-touch-icon.png": "b32c46a09fd391bdde2ccf45948ca3d4ba8b9b2c",
+    "./icons/icon-192.png": "bccf035777f32b06687f073b1f5cd56c5ea07cef",
     "./icons/icon-192.svg": "59b2c3a34d1aa91c368d9a83af0b00e7dc83faf0",
+    "./icons/icon-512.png": "369272892104a9ae2b16cc3d48c981d825fb3097",
     "./icons/icon-512.svg": "617c80d0ea0947b31c1fb1594d6bdab3cdfa623e",
-    "./index.html": "cf9c4592f9c31fb804b88fd3c01fe29d6624021d",
-    "./main-DEVK6BJC.js": "26a5b92eebc226c2dc270a95ae6d818b0422ab54",
-    "./manifest.webmanifest": "28bc100a35b127a05d0ad2e9bde8187f373fa009",
-    "./styles-RCAW533A.css": "c1e3fb260392d1f1209b4af587fc1161b95e258f"
+    "./icons/icon-maskable-512.png": "fab42c8929bc06823ac65083595ff35cea2f1086",
+    "./index.html": "c0c403cf8b0a252f922c1c5f5023a5b954e17dff",
+    "./main-3JHCC2IY.js": "7a6427b64007ba7baacf8004090ca5b69301ba1c",
+    "./manifest.webmanifest": "e78aaf80e95161ab8a60c9be6f3724c3cde8fe7d",
+    "./styles-POSZTEBJ.css": "5697599b8b28b89926ee95bea8d9a70629e7145a"
   },
   "navigationUrls": [
     {
