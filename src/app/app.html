@@ -1,26 +1,14 @@
 <main class="page">
   <section class="card">
-    <div class="hidden md:flex md:flex-row items-center justify-between w-full mg:max-h-[200px] mb-2">
-      <h1 class="flex flex-1">
-        P2P Room
-      </h1>
-      <div class="loader-head" [class.disabled]="!isTimerStarted()">
+    <header class="app-header">
+      <h1>P2P Room</h1>
+      <div class="loader-head" [class.disabled]="!session.isConnected()" aria-hidden="true">
         <span></span>
       </div>
-      <clock class="flex items-center justify-end flex-1 mt-2 md:md-0"/>
-    </div>
-    <div class="flex md:hidden flex-col items-center justify-between w-full mg:max-h-[200px] mb-2">
-      <h1 class="flex flex-1">
-        P2P Room
-      </h1>
-      <div class="flex w-full items-center justify-center">
-        <div class="loader-head" [class.disabled]="!isTimerStarted()">
-          <span></span>
-        </div>
-        <clock class="flex items-center justify-end flex-1 mt-2 md:md-0"/>
-      </div>
-    </div>
-    @if (canInstallApp()) {
+      <clock />
+    </header>
+
+    @if (installPrompt.canInstall()) {
       <section class="install-banner">
         <p>Install this app on your phone for faster access.</p>
         <div class="install-actions">
@@ -29,179 +17,179 @@
         </div>
       </section>
     }
-    
-    <br class="hidden md:block" />
-    <p class="card">{{ status() }}</p>
-    <br />
-    <p class="status">
-      @if (isProduction) {
-        Signaling: {{ peerJs.signalingServer }} (Hugging Face). Media and chat are peer-to-peer.
-      } @else {
-        Signaling: {{ peerJs.signalingServer }} — локально: <code>npm run peer-server</code> + Loophole. Media and chat are peer-to-peer.
-      }
-    </p>
 
-    <div class="controls">
-      <button type="button" (click)="createRoom()">Create room</button>
-      <button type="button" (click)="joinRoom()">Join room</button>
-      <button type="button" (click)="disconnect(); audioService.play('click')">Disconnect</button>
+    <div class="card status-panel" role="status" aria-live="polite">
+      <span class="status-dot" [attr.data-tone]="session.tone()"></span>
+      <p>{{ session.status() }}</p>
     </div>
+    @if (media.notice(); as notice) {
+      <p class="hint">{{ notice }}</p>
+    }
+    <p class="hint">Signaling: {{ peerJs.signalingServer }}. Media and chat are peer-to-peer.</p>
 
-    <section class="signal-section">
-      <h3>Peer ID</h3>
-      <textarea
-        name="my-peer-id"
-        class="overflow-hidden !resize-none"
-        [value]="myPeerId() ?? ''"
-        readonly
-        rows="1"
-        placeholder="Create a room to get your Peer ID."
-      ></textarea>
-      <button type="button" (click)="copyPeerId()" class="mb-4">Copy my Peer ID</button>
+    @if (session.isIdle()) {
+      <div class="room-forms">
+        <form class="room-form" (ngSubmit)="createRoom()">
+          <label for="custom-room-id">Custom room ID (optional)</label>
+          <input
+            id="custom-room-id"
+            name="custom-room-id"
+            type="text"
+            autocomplete="off"
+            [(ngModel)]="customRoomId"
+            placeholder="Leave empty for a random ID"
+          />
+          <button type="submit">Create room</button>
+        </form>
 
-      <label class="block mb-1 text-sm opacity-80" for="custom-room-id">Custom room ID (optional, host only)</label>
-      <input
-        id="custom-room-id"
-        name="custom-room-id"
-        type="text"
-        class="w-full mb-4"
-        [(ngModel)]="customRoomId"
-        placeholder="Leave empty for a random ID"
-      />
-
-      <label class="block mb-1 text-sm opacity-80" for="remote-peer-id">Remote Peer ID</label>
-      <input
-        id="remote-peer-id"
-        name="remote-peer-id"
-        type="text"
-        class="w-full"
-        [(ngModel)]="remotePeerId"
-        placeholder="Paste host Peer ID to join"
-      />
-    </section>
-
-    <div class="video-stage">
-      <video 
-        #remoteVideo 
-        autoplay 
-        playsinline 
-        [muted]="!isMediaStarted()" 
-        [class.max-h-0]="!isMediaStarted()" 
-        [class.max-h-screen]="isMediaStarted()" 
-        class="transition-all duration-300 overflow-hidden"></video>
-      <video 
-        class="local-preview transition-all duration-300 overflow-hidden" 
-        #localVideo 
-        muted 
-        autoplay 
-        playsinline
-        [class.max-h-0]="!isMediaStarted()" 
-        [class.max-h-screen]="isMediaStarted()"></video>
-      <audio #remoteAudio autoplay playsinline [muted]="!isMediaStarted()"></audio>
-    </div>
-
-    <div class="controls">
-      <button type="button" (click)="isMediaStarted.update(value => !value); audioService.play('click')">
-        {{ !isMediaStarted() ? 'Start media' : 'Stop media' }}
-      </button>
-      
-      <div class="switch-holder col-span-2 md:col-span-1">
-        <div class="switch-label">
-          <i class="fa fa-bluetooth-b"></i><span>Microfone</span>
-        </div>
-        <div class="switch-toggle">
-          <input type="checkbox" id="microfone" (click)="toggleMicrophone(); $event.preventDefault()" [checked]="isMicEnabled()">
-          <label for="microfone"></label>
-        </div>
+        <form class="room-form" (ngSubmit)="joinRoom()">
+          <label for="remote-peer-id">Room ID</label>
+          <input
+            id="remote-peer-id"
+            name="remote-peer-id"
+            type="text"
+            autocomplete="off"
+            [(ngModel)]="remotePeerId"
+            placeholder="Paste the host's room ID"
+          />
+          <button type="submit" [disabled]="!remotePeerId().trim()">Join room</button>
+        </form>
       </div>
-      
-      <div class="switch-holder col-span-2 md:col-span-1">
-        <div class="switch-label">
-          <i class="fa fa-bluetooth-b"></i><span>Camera</span>
-        </div>
-        <div class="switch-toggle">
-          <input type="checkbox" id="camera" (click)="toggleCamera(); $event.preventDefault()" [checked]="isCamEnabled()">
-          <label for="camera"></label>
-        </div>
-      </div>
-      
-      <div class="switch-holder col-span-2 md:col-span-1">
-        <div class="switch-label">
-          <i class="fa fa-bluetooth-b"></i><span>Sound</span>
-        </div>
-        <div class="switch-toggle">
-          <input type="checkbox" id="sound" (click)="audioService.toggleMute(); $event.preventDefault();audioService.play('click')" [checked]="!audioService.isMuted()">
-          <label for="sound"></label>
-        </div>
-      </div>
-      
-    </div>
-
-    <div class="flex items-center justify-start mt-4 w-full">
-      <range (finalChange)="audioService.setVolume($event)" [value]="audioService.volume()" [min]="0" [max]="1" [step]="0.01"></range>
-    </div>
-
-    <section class="chat">
-      <h3>Text chat</h3>
-      <div class="messages" #scrollContainer>
-        @for (message of chatMessages(); track $index) {
-          <div class="message-row" [class.mine]="message.author === 'me'">
-            <p class="message-bubble">{{ message.text }}</p>
+    } @else {
+      <div class="room-summary">
+        @if (session.roomId(); as roomId) {
+          <div>
+            <span class="room-summary__label">Room ID</span>
+            <output class="room-summary__id">{{ roomId }}</output>
           </div>
         }
+        <div class="room-summary__actions">
+          @if (session.isHost() && session.roomId()) {
+            @if (canShareInvite) {
+              <button type="button" (click)="shareInvite()">Share invite</button>
+            }
+            <button type="button" (click)="copyInviteLink()">
+              {{ copied() === 'link' ? 'Link copied!' : 'Copy invite link' }}
+            </button>
+            <button type="button" (click)="copyRoomId()">
+              {{ copied() === 'id' ? 'ID copied!' : 'Copy room ID' }}
+            </button>
+          }
+          <button type="button" (click)="session.leave()">{{ session.leaveLabel() }}</button>
+        </div>
       </div>
-      <div class="chat-form !flex !flex-wrap items-center justify-center">
-        <textarea 
-          name="message-field"
-          [(ngModel)]="outboundMessage" 
-          placeholder="Message" 
-          (keydown)="onKeyDown($event)" 
-          class="flex-1 overflow-hidden !resize-none !mb-0"
-          rows="1"
-        ></textarea>
-        <button type="button" class="!px-6 flex items-center" (click)="sendMessage()">Send</button>
+    }
+
+    <section class="media">
+      <video-stage
+        [active]="isMediaStarted()"
+        [localStream]="media.previewStream()"
+        [remoteVideo]="peerJs.remoteVideo()"
+        [remoteAudio]="peerJs.remoteAudio()"
+        [isCamEnabled]="media.isCamEnabled()"
+        [remoteVolume]="audio.remoteVolume()"
+        [remoteMedia]="peerJs.remoteMedia()"
+        [isSharingScreen]="media.isSharingScreen()"
+        [speakerId]="media.speakerId()"
+      />
+
+      @if (hasHiddenRemoteMedia()) {
+        <p class="hint">Your peer's media is ready. Press Start media to see and hear them.</p>
+      }
+
+      <div class="controls">
+        <button type="button" [attr.aria-pressed]="isMediaStarted()" (click)="toggleMediaStage()">
+          {{ isMediaStarted() ? 'Stop media' : 'Start media' }}
+        </button>
+        @if (media.canShareScreen) {
+          <button
+            type="button"
+            [attr.aria-pressed]="media.isSharingScreen()"
+            [disabled]="!session.isConnected()"
+            [title]="session.isConnected() ? '' : 'Available once your peer is connected'"
+            (click)="session.toggleScreenShare()"
+          >
+            {{ media.isSharingScreen() ? 'Stop sharing' : 'Share screen' }}
+          </button>
+        }
+        <neo-switch
+          label="Microphone"
+          [checked]="media.isMicEnabled()"
+          [disabled]="!media.hasMic()"
+          disabledHint="Available after you create or join a room with microphone access"
+          (toggled)="toggleMicrophone()"
+        />
+        <neo-switch
+          label="Camera"
+          [checked]="media.isCamEnabled()"
+          [disabled]="!media.hasCam() || media.isSharingScreen()"
+          [disabledHint]="
+            media.isSharingScreen()
+              ? 'Your screen is being shared instead of the camera'
+              : 'Available after you create or join a room with camera access'
+          "
+          (toggled)="toggleCamera()"
+        />
+        <neo-switch
+          label="UI sounds"
+          [checked]="!audio.isMuted()"
+          (toggled)="toggleUiSounds()"
+        />
+      </div>
+
+      @if (media.stream()) {
+        <div class="devices">
+          @if (media.microphones().length > 1) {
+            <neo-select
+              label="Microphone"
+              [devices]="media.microphones()"
+              [value]="media.microphoneId()"
+              [disabled]="media.isSwitchingDevice()"
+              (changed)="session.switchDevice('audio', $event)"
+            />
+          }
+          @if (media.cameras().length > 1) {
+            <neo-select
+              label="Camera"
+              [devices]="media.cameras()"
+              [value]="media.cameraId()"
+              [disabled]="media.isSwitchingDevice()"
+              (changed)="session.switchDevice('video', $event)"
+            />
+          }
+          @if (media.canChooseSpeaker && media.speakers().length > 1) {
+            <neo-select
+              label="Speaker"
+              [devices]="media.speakers()"
+              [value]="media.speakerId()"
+              (changed)="media.setSpeaker($event)"
+            />
+          }
+        </div>
+      }
+
+      <div class="volumes">
+        <range
+          label="Peer volume"
+          [value]="audio.remoteVolume()"
+          (valueChange)="audio.setRemoteVolume($event)"
+        />
+        <range
+          label="UI sounds volume"
+          [value]="audio.volume()"
+          (finalChange)="audio.setVolume($event)"
+        />
       </div>
     </section>
+
+    <chat
+      [messages]="session.messages()"
+      [canSend]="session.isConnected()"
+      (send)="session.sendMessage($event)"
+    />
   </section>
-  @if (isLoading()) {
-    <svg height="128px" width="128px" viewBox="0 0 128 128" class="pl1 fixed top-[50%] left-[50%] -translate-1/2 z-[999]">
-      <defs>
-        <linearGradient y2="1" x2="1" y1="0" x1="0" id="pl-grad">
-          <stop stop-color="#000" offset="0%"></stop>
-          <stop stop-color="#fff" offset="100%"></stop>
-        </linearGradient>
-        <mask id="pl-mask">
-          <rect fill="url(#pl-grad)" height="128" width="128" y="0" x="0"></rect>
-        </mask>
-      </defs>
-      <g fill="rgb(226, 57, 241)">
-        <g class="pl1__g">
-          <g transform="translate(20,20) rotate(0,44,44)">
-            <g class="pl1__rect-g">
-              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-            </g>
-            <g transform="rotate(180,44,44)" class="pl1__rect-g">
-              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-            </g>
-          </g>
-        </g>
-      </g>
-      <g mask="url(#pl-mask)" fill="rgb(89, 92, 252)">
-        <g class="pl1__g">
-          <g transform="translate(20,20) rotate(0,44,44)">
-            <g class="pl1__rect-g">
-              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-            </g>
-            <g transform="rotate(180,44,44)" class="pl1__rect-g">
-              <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-            </g>
-          </g>
-        </g>
-      </g>
-    </svg>
+
+  @if (session.isBusy()) {
+    <app-loader />
   }
 </main>

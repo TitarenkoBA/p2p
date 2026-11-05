@@ -1,13 +1,11 @@
-import { Component, output, input, computed } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, output, input, computed, linkedSignal } from '@angular/core';
 
 @Component({
     selector: 'range',
     templateUrl: './range.component.html',
     styleUrls: ['./range.component.scss'],
-    imports: [FormsModule],
     host: {
-        class: 'w-full md:w-1/2'
+        class: 'block w-full'
     }
 })
 export class RangeComponent {
@@ -15,15 +13,20 @@ export class RangeComponent {
     min = input<number>(0);
     max = input<number>(1);
     step = input<number>(0.01);
+    label = input<string>('');
     valueChange = output<number>();
     finalChange = output<number>();
-    backgroundSize = computed(() => {
-        const percentage = ((this.value() - this.min()) / (this.max() - this.min())) * 100;
-        return `${percentage}% 100%`;
-    });
+
+    // Заполнение дорожки следует за бегунком и во время перетаскивания
+    protected current = linkedSignal(() => this.value());
+    protected percentage = computed(() =>
+        Math.round(((this.current() - this.min()) / (this.max() - this.min())) * 100)
+    );
+    protected backgroundSize = computed(() => `${this.percentage()}% 100%`);
 
     onInput(event: Event) {
         const val = parseFloat((event.target as HTMLInputElement).value);
+        this.current.set(val);
         this.valueChange.emit(val);
     }
 

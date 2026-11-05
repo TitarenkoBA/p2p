@@ -21,6 +21,7 @@
       "resources": {
         "files": [
           "/icons/**",
+          "/assets/**",
           "/favicon.ico"
         ]
       }

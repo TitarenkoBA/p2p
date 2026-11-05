@@ -1,0 +1,43 @@
+<section class="chat">
+  <h3>Text chat</h3>
+  <div
+    #scrollContainer
+    class="messages"
+    role="log"
+    aria-live="polite"
+    aria-label="Chat messages"
+    tabindex="0"
+    (scroll)="onScroll(scrollContainer)"
+  >
+    @for (message of messages(); track message.id) {
+      @if (message.author === 'system') {
+        <p class="message-system">{{ message.text }} · {{ message.at | date: 'HH:mm' }}</p>
+      } @else {
+        <div class="message-row" [class.mine]="message.author === 'me'">
+          <p class="message-bubble">
+            {{ message.text }}
+            <time class="message-time">{{ message.at | date: 'HH:mm' }}</time>
+          </p>
+        </div>
+      }
+    } @empty {
+      <p class="messages-empty">
+        {{ canSend() ? 'No messages yet. Say hi!' : 'Messages will appear here once your peer connects.' }}
+      </p>
+    }
+  </div>
+  <div class="chat-form">
+    <textarea
+      #field
+      name="message-field"
+      aria-label="Message"
+      rows="1"
+      [placeholder]="canSend() ? 'Message' : 'Connect to a peer to chat'"
+      [value]="draft()"
+      (input)="onInput(field.value)"
+      (keydown)="onKeyDown($event)"
+    ></textarea>
+    <button type="button" [disabled]="!canSend() || !draft().trim()" (click)="submit()">Send</button>
+  </div>
+  <p class="chat-hint">Enter to send · Shift+Enter for a new line</p>
+</section>

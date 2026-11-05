@@ -1,3 +1,128 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import "tailwindcss";
+
+:root {
+  --surface: #e8e8e8;
+  --stage: #111927;
+  --text: #545454;
+  --text-muted: #6e6e6e;
+  --shadow-dark: #c5c5c5;
+  --shadow-light: #ffffff;
+  --accent-from: rgb(89, 92, 252);
+  --accent-to: rgb(226, 57, 241);
+  --ok: #00b33c;
+  --danger: #d64545;
+  --shadow-raised: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  --shadow-inset: inset 6px 6px 14px var(--shadow-dark), inset -6px -6px 14px var(--shadow-light);
+  --shadow-flat: 2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light);
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  text-shadow: 2px 2px 0 #fff;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.card {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1rem;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow:
+    10px 10px 24px var(--shadow-dark),
+    -10px -10px 24px var(--shadow-light);
+}
+
+button,
+input,
+select,
+textarea {
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  color: var(--text);
+  text-shadow: inherit;
+  background: var(--surface);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  box-shadow: var(--shadow-inset);
+}
+
+select {
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+button {
+  min-height: 44px;
+  padding: 0.6rem 0.7rem;
+  font-size: 18px;
+  border-radius: 0.5em;
+  cursor: pointer;
+  border: 1px solid var(--surface);
+  transition: all 0.3s;
+  box-shadow: var(--shadow-raised);
+}
+
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    color: var(--accent-from);
+  }
+}
+
+button:active:not(:disabled) {
+  box-shadow:
+    inset 4px 4px 12px var(--shadow-dark),
+    inset -4px -4px 12px var(--shadow-light);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: var(--shadow-flat);
+}
+
+button:focus-visible,
+input:not([type="range"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-from);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

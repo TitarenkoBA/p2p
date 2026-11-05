@@ -6,16 +6,24 @@ $accent-color: #00000080;
 .range-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    background: $bg-color;
-    padding: 30px;
+    gap: 0.75rem;
+    padding: 0.5rem 0.25rem;
     border-radius: 20px;
+}
+
+.range-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
 .neo-range {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
+    min-height: 0;
     height: 12px;
+    padding: 0;
     border-radius: 10px;
     background: $bg-color;
     // Эффект "вдавленности" для дорожки
@@ -56,12 +64,14 @@ $accent-color: #00000080;
         box-shadow: 4px 4px 8px $shadow-dark, -4px -4px 8px $shadow-light;
         border: none;
     }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent-from);
+        outline-offset: 6px;
+    }
 }
 
 .value-display {
-    margin-top: 20px;
-    font-family: sans-serif;
-    color: #444;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px $shadow-light;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
 }

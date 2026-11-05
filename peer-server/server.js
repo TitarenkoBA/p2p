@@ -6,7 +6,7 @@ const path = process.env['PEER_PATH'] ?? '/';
 const server = PeerServer({
   port,
   path,
-  allow_discovery: true,
+  allow_discovery: false,
   proxied: process.env['PROXIED'] === 'true'
 });
 
