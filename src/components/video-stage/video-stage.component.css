@@ -11,44 +11,66 @@
   max-height: 100vh;
 }
 
-.remote-video {
-  display: block;
+/* One other person or nobody yet: a big tile with the self-view in the corner. */
+.stage-empty,
+.main {
   width: 100%;
   max-height: 100vh;
-  aspect-ratio: 16 / 11;
-  object-fit: cover;
+  border-radius: 0;
 }
 
-/* A shared screen must stay readable, so it is never cropped. */
-.remote-video.is-screen {
-  object-fit: contain;
-}
-
-.stage-placeholder {
-  position: absolute;
-  inset: 0;
+.stage-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0;
+  aspect-ratio: 16 / 11;
   padding: 1rem;
-  background: var(--stage);
   color: #c9ced6;
   text-align: center;
-  text-shadow: none;
-  pointer-events: none;
 }
 
-.stage-badge {
-  position: absolute;
-  left: 0.7rem;
-  top: 0.7rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 10px;
-  background: #00000080;
-  color: #fff;
-  font-size: 0.85rem;
+.stage-empty p {
+  margin: 0;
   text-shadow: none;
+}
+
+.pip {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  width: 31%;
+  min-width: 112px;
+  max-width: 170px;
+  border: 2px solid var(--surface);
+  border-radius: 12px;
+  box-shadow:
+    6px 6px 12px #232c3a55,
+    -4px -4px 10px #ffffff44;
+}
+
+/* Two others or more: everyone gets a tile. */
+.video-stage.is-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+}
+
+.is-grid video-tile {
+  cursor: pointer;
+}
+
+.is-grid video-tile:focus-visible {
+  outline: 3px solid var(--accent-to);
+  outline-offset: -3px;
+}
+
+.is-pinned {
+  --tile-ratio: 16 / 9;
+}
+
+.has-pinned video-tile:not(.is-pinned) {
+  --tile-ratio: 4 / 3;
 }
 
 .fullscreen-toggle {
@@ -71,48 +93,6 @@
   stroke-linejoin: round;
 }
 
-.local-preview {
-  position: absolute;
-  right: 0.7rem;
-  bottom: 0.7rem;
-  width: 31%;
-  min-width: 112px;
-  max-width: 170px;
-  overflow: hidden;
-  border-radius: 12px;
-  border: 2px solid var(--surface);
-  background: var(--stage);
-  box-shadow:
-    6px 6px 12px #232c3a55,
-    -4px -4px 10px #ffffff44;
-}
-
-.local-preview video {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 11;
-  object-fit: cover;
-  /* Mirror the self-view, as people expect from a front camera. */
-  transform: scaleX(-1);
-}
-
-.local-preview video.is-screen {
-  object-fit: contain;
-  transform: none;
-}
-
-.preview-placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--stage);
-  color: #c9ced6;
-  font-size: 0.85rem;
-  text-shadow: none;
-}
-
 .video-stage:fullscreen {
   max-height: none;
   width: 100%;
@@ -120,28 +100,47 @@
   border-radius: 0;
 }
 
-.video-stage:fullscreen .remote-video {
-  width: 100%;
+.video-stage:fullscreen .main,
+.video-stage:fullscreen .stage-empty {
   height: 100%;
   max-height: none;
-  aspect-ratio: auto;
-  object-fit: contain;
+}
+
+.video-stage:fullscreen.is-grid {
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.video-stage:fullscreen.has-pinned {
+  grid-template-rows: minmax(0, 3fr) minmax(0, 1fr);
+}
+
+.video-stage:fullscreen video-tile {
+  --tile-ratio: auto;
 }
 
 /* A phone on its side: fit the whole stage on screen instead of cropping it. */
 @media (orientation: landscape) and (max-height: 540px) {
-  .video-stage.is-active,
-  .remote-video {
+  .video-stage.is-active {
     max-height: calc(100dvh - 1rem);
   }
 
-  .remote-video {
+  .main,
+  .stage-empty {
     height: calc(100dvh - 1rem);
+    --tile-ratio: auto;
     aspect-ratio: auto;
-    object-fit: contain;
   }
 
-  .local-preview {
+  .video-stage.is-grid {
+    height: calc(100dvh - 1rem);
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .is-grid video-tile {
+    --tile-ratio: auto;
+  }
+
+  .pip {
     width: 22%;
   }
 }

@@ -1,20 +1,62 @@
-<div #stageEl class="video-stage" [class.is-active]="active()">
-  <video
-    #remoteVideoEl
-    class="remote-video"
-    [class.is-screen]="remoteMedia().screen"
-    autoplay
-    playsinline
-    [muted]="true"
-  ></video>
-  @if (!remoteVideo()) {
-    <p class="stage-placeholder">Your peer's video will appear here</p>
-  } @else if (!isRemoteVideoOn()) {
-    <p class="stage-placeholder">Your peer's camera is off</p>
+<div
+  #stageEl
+  class="video-stage"
+  [class.is-active]="active()"
+  [class.is-grid]="isGrid()"
+  [class.has-pinned]="!!pinnedKey()"
+>
+  @if (participants().length === 0) {
+    <div class="stage-empty">
+      <p>Video of the people who join will appear here</p>
+    </div>
   }
 
-  @if (remoteVideo() && !remoteMedia().mic) {
-    <span class="stage-badge">Peer's mic is off</span>
+  @for (tile of tiles(); track tile.key) {
+    @if (tile.link; as link) {
+      <video-tile
+        [class.main]="!isGrid()"
+        [class.is-pinned]="pinnedKey() === tile.key"
+        [style.grid-column]="gridColumn(tile.key)"
+        [style.order]="pinnedKey() === tile.key ? -1 : null"
+        [attr.tabindex]="isGrid() ? 0 : null"
+        [attr.role]="isGrid() ? 'button' : null"
+        [attr.aria-pressed]="isGrid() ? pinnedKey() === tile.key : null"
+        [attr.aria-label]="isGrid() ? 'Pin ' + link.name() : null"
+        [name]="link.name()"
+        [video]="link.video()"
+        [audio]="link.audio()"
+        [isVideoOn]="link.media().cam || link.media().screen"
+        [isMicOn]="link.media().mic"
+        [isScreen]="link.media().screen"
+        [status]="link.status()"
+        [audible]="active()"
+        [volume]="volumeOf(link)"
+        [speakerId]="speakerId()"
+        [levelStream]="link.audio()"
+        (click)="togglePin(tile.key)"
+        (keydown.enter)="togglePin(tile.key)"
+      />
+    } @else {
+      <video-tile
+        [class.pip]="!isGrid()"
+        [class.is-pinned]="pinnedKey() === tile.key"
+        [style.grid-column]="gridColumn(tile.key)"
+        [style.order]="pinnedKey() === tile.key ? -1 : null"
+        [attr.tabindex]="isGrid() ? 0 : null"
+        [attr.role]="isGrid() ? 'button' : null"
+        [attr.aria-pressed]="isGrid() ? pinnedKey() === tile.key : null"
+        [attr.aria-label]="isGrid() ? 'Pin your video' : null"
+        [isSelf]="true"
+        [name]="myName()"
+        [video]="localStream()"
+        [isVideoOn]="isCamEnabled() || isSharingScreen()"
+        [isMicOn]="isMicEnabled()"
+        [isScreen]="isSharingScreen()"
+        [levelStream]="isMicEnabled() ? microphoneStream() : undefined"
+        (click)="togglePin(tile.key)"
+        (keydown.enter)="togglePin(tile.key)"
+      />
+    }
   }
 
   @if (canFullscreen) {
@@ -34,13 +76,4 @@
       </svg>
     </button>
   }
-
-  <div class="local-preview">
-    <video #localVideoEl [class.is-screen]="isSharingScreen()" autoplay playsinline [muted]="true"></video>
-    @if (!isCamEnabled() && !isSharingScreen()) {
-      <span class="preview-placeholder">Camera off</span>
-    }
-  </div>
-
-  <audio #remoteAudioEl autoplay [muted]="!active()"></audio>
 </div>

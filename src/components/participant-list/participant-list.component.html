@@ -1,0 +1,42 @@
+<section class="participants" aria-labelledby="participants-title">
+  <h3 id="participants-title">In the room · {{ participants().length + 1 }} of {{ capacity() }}</h3>
+  <ul>
+    <li class="participant">
+      <div class="participant__head">
+        <span class="participant__name">{{ myName() || 'You' }} (you)</span>
+        @if (isHost()) {
+          <span class="participant__badge">Host</span>
+        }
+      </div>
+      <span class="participant__state">{{ describe(myMedia()) }}</span>
+    </li>
+    @for (link of participants(); track link.id) {
+      <li class="participant">
+        <div class="participant__head">
+          <span class="participant__name">{{ link.name() }}</span>
+          @if (link.isHost) {
+            <span class="participant__badge">Host</span>
+          }
+        </div>
+        <span class="participant__state" [class.is-failed]="link.status() === 'failed'">
+          @switch (link.status()) {
+            @case ('connecting') {
+              Connecting…
+            }
+            @case ('failed') {
+              Could not connect directly
+            }
+            @default {
+              {{ describe(link.media()) }}
+            }
+          }
+        </span>
+        <range
+          [label]="'Volume of ' + link.name()"
+          [value]="volumes()[link.id] ?? 1"
+          (valueChange)="volumeChange.emit({ id: link.id, value: $event })"
+        />
+      </li>
+    }
+  </ul>
+</section>

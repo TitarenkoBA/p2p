@@ -1,13 +1,16 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AudioService } from './audio.service';
 import { LocalMediaService, MediaKind } from './local-media.service';
-import { ConnectionState, PeerEvent, PeerJsService } from './peerjs.service';
+import { MAX_NAME_LENGTH } from './room/protocol';
+import { ConnectionState, RoomEvent, RoomService } from './room/room.service';
 
 export type StatusTone = 'neutral' | 'busy' | 'ok' | 'error';
 
 export interface ChatMessage {
   id: number;
   author: 'me' | 'peer' | 'system';
+  /** Who wrote a peer message. */
+  name?: string;
   text: string;
   at: Date;
 }
@@ -17,18 +20,28 @@ interface StatusNotice {
   tone: StatusTone;
 }
 
+const NAME_STORAGE_KEY = 'p2p.name';
+
 const STATE_STATUS: Record<ConnectionState, StatusNotice> = {
   idle: { text: 'Not connected', tone: 'neutral' },
   opening: { text: 'Connecting to the signaling server…', tone: 'busy' },
-  waiting: { text: 'Room is open. Share the invite link and wait for your peer.', tone: 'busy' },
-  connecting: { text: 'Connecting to peer…', tone: 'busy' },
+  waiting: { text: 'Room is open. Share the invite link and wait for others to join.', tone: 'busy' },
+  connecting: { text: 'Connecting…', tone: 'busy' },
   connected: { text: 'Connected', tone: 'ok' }
 };
 
-/** Ties the peer connection, local media, chat and sounds into one call session for the UI. */
+function readStoredName(): string {
+  try {
+    return localStorage.getItem(NAME_STORAGE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Ties the room, local media, chat and sounds into one call session for the UI. */
 @Injectable({ providedIn: 'root' })
 export class SessionService {
-  private readonly peer = inject(PeerJsService);
+  private readonly room = inject(RoomService);
   private readonly media = inject(LocalMediaService);
   private readonly audio = inject(AudioService);
 
@@ -37,59 +50,101 @@ export class SessionService {
   private readonly notice = signal<StatusNotice | null>(null);
 
   readonly messages = signal<ChatMessage[]>([]);
+  /** The name this side asks for. Empty lets the host pick a default. */
+  readonly name = signal(readStoredName());
   readonly isBusy = signal(false);
-  readonly isConnected = computed(() => this.peer.state() === 'connected');
-  readonly isIdle = computed(() => this.peer.state() === 'idle' && !this.isBusy());
-  readonly isHost = computed(() => this.peer.role() === 'host');
-  readonly roomId = computed(() => (this.isHost() ? this.peer.myPeerId() : this.peer.remotePeerId()));
+  readonly isConnected = computed(() => this.room.state() === 'connected');
+  readonly isIdle = computed(() => this.room.state() === 'idle' && !this.isBusy());
+  readonly isHost = computed(() => this.room.role() === 'host');
+  readonly roomId = this.room.roomId;
+  readonly participants = this.room.participants;
+  /** Including this side. */
+  readonly headcount = computed(() => this.participants().length + 1);
+  /** Who else is showing their screen right now; only one person can at a time. */
+  readonly screenSharer = computed(() => this.participants().find((link) => link.media().screen) ?? null);
 
   private readonly currentStatus = computed<StatusNotice>(() => {
+    const state = this.room.state();
     // An open call does not need signaling, so only a waiting host has to know it is gone.
-    if (this.peer.signalingLost() && this.peer.state() === 'waiting') {
+    if (this.room.signalingLost() && state === 'waiting') {
       return { text: 'Lost the signaling server. Reconnecting…', tone: 'busy' };
     }
-    return this.notice() ?? STATE_STATUS[this.peer.state()];
+    const notice = this.notice();
+    if (notice) {
+      return notice;
+    }
+    if (state === 'connected') {
+      return { text: `Connected · ${this.headcount()} of ${this.room.capacity} in the room`, tone: 'ok' };
+    }
+    return STATE_STATUS[state];
   });
   readonly status = computed(() => this.currentStatus().text);
   readonly tone = computed(() => this.currentStatus().tone);
 
   readonly leaveLabel = computed(() => {
-    if (this.isConnected()) {
-      return 'Disconnect';
+    const state = this.room.state();
+    if (this.isHost() && state !== 'opening' && state !== 'idle') {
+      return 'Close room';
     }
-    return this.peer.state() === 'waiting' ? 'Close room' : 'Cancel';
+    return state === 'connected' ? 'Leave room' : 'Cancel';
   });
 
   constructor() {
-    this.peer.events$.subscribe((event) => this.handlePeerEvent(event));
+    this.room.events$.subscribe((event) => this.handleRoomEvent(event));
     effect(() => {
-      if (this.isConnected()) {
-        this.peer.sendMediaState({
-          mic: this.media.isMicEnabled(),
-          cam: this.media.isCamEnabled(),
-          screen: this.media.isSharingScreen()
+      this.room.sendMediaState({
+        mic: this.media.isMicEnabled(),
+        cam: this.media.isCamEnabled(),
+        screen: this.media.isSharingScreen()
+      });
+    });
+    // Two people may press "Share screen" at the same moment. Both see the clash and
+    // the one with the greater ID backs off, so exactly one share survives.
+    effect(() => {
+      const other = this.screenSharer();
+      const myId = this.room.myPeerId();
+      if (other && myId && other.id < myId && this.media.isSharingScreen()) {
+        untracked(() => {
+          this.stopScreenShare();
+          this.notify(`${other.name()} started sharing their screen first.`);
         });
+      }
+    });
+    // Sharing needs someone to watch it.
+    effect(() => {
+      if (this.participants().length === 0 && this.media.isSharingScreen()) {
+        untracked(() => this.stopScreenShare());
       }
     });
   }
 
+  setName(name: string): void {
+    const value = name.slice(0, MAX_NAME_LENGTH);
+    this.name.set(value);
+    try {
+      localStorage.setItem(NAME_STORAGE_KEY, value.trim());
+    } catch {
+      // The name just won't survive a reload.
+    }
+  }
+
   createRoom(roomId: string): Promise<void> {
     return this.start(async (stream) => {
-      await this.peer.createRoom(stream, roomId);
+      await this.room.createRoom(stream, this.name(), roomId);
       this.audio.play('notification');
     });
   }
 
-  joinRoom(remotePeerId: string): Promise<void> {
-    return this.start((stream) => this.peer.joinRoom(remotePeerId, stream));
+  joinRoom(roomId: string): Promise<void> {
+    return this.start((stream) => this.room.joinRoom(roomId, stream, this.name()));
   }
 
   leave(): void {
     this.audio.play('click');
-    const wasActive = this.peer.state() !== 'idle';
+    const wasActive = this.room.state() !== 'idle';
     this.operationId += 1;
     this.isBusy.set(false);
-    this.peer.disconnect();
+    this.room.disconnect();
     this.media.release();
     this.notice.set(null);
     this.messages.set([]);
@@ -100,7 +155,7 @@ export class SessionService {
 
   sendMessage(text: string): boolean {
     const message = text.trim();
-    if (!message || !this.peer.sendMessage(message)) {
+    if (!message || !this.room.sendMessage(message)) {
       return false;
     }
     this.audio.play('send-message');
@@ -108,20 +163,20 @@ export class SessionService {
     return true;
   }
 
-  /** Sharing needs a connected peer: nobody should land on a screen that is already being shown. */
+  /** Sharing needs someone in the room, and only one person can share at a time. */
   async toggleScreenShare(): Promise<void> {
     this.audio.play('click');
     if (this.media.isSharingScreen()) {
       this.stopScreenShare();
       return;
     }
-    if (!this.isConnected()) {
+    if (!this.isConnected() || this.screenSharer()) {
       return;
     }
 
     const track = await this.media.startScreenShare(() => this.sendCamera());
     if (track) {
-      this.peer.setOutgoingTrack('video', track);
+      this.room.setOutgoingTrack('video', track);
     }
   }
 
@@ -132,7 +187,7 @@ export class SessionService {
     }
     // While sharing, the new camera just waits for the share to end.
     if (kind === 'audio' || !this.media.isSharingScreen()) {
-      this.peer.setOutgoingTrack(kind, result.track);
+      this.room.setOutgoingTrack(kind, result.track);
     }
     if (!result.ok) {
       this.notify('Could not switch to that device.', 'error');
@@ -171,34 +226,30 @@ export class SessionService {
     }
   }
 
-  private handlePeerEvent(event: PeerEvent): void {
+  private handleRoomEvent(event: RoomEvent): void {
     switch (event.type) {
-      case 'joined':
-        this.media.muteAll();
+      case 'entered':
         this.notice.set(null);
-        this.addMessage('system', 'Peer connected');
+        this.addMessage('system', `You joined. In the room: ${event.names.join(', ')}`);
+        this.audio.play('connected');
+        break;
+      case 'joined':
+        this.notice.set(null);
+        this.addMessage('system', `${event.name} joined`);
         this.audio.play('connected');
         break;
       case 'left':
-        this.addMessage('system', 'Peer left');
+        this.addMessage('system', `${event.name} left`);
         this.audio.play('disconnected');
-        if (event.role === 'host') {
-          this.stopScreenShare();
-          this.media.muteAll();
-          this.notify('Your peer left. The room stays open for the next one.', 'busy');
-        } else {
-          this.media.release();
-          this.notify('The host left the room.');
-        }
         break;
-      case 'room-full':
+      case 'room-closed':
         this.media.release();
-        this.messages.set([]);
-        this.notify('This room already has a participant.', 'error');
+        this.addMessage('system', 'The host closed the room');
+        this.notify('The host closed the room.');
         this.audio.play('disconnected');
         break;
       case 'message':
-        this.addMessage('peer', event.text);
+        this.addMessage('peer', event.text, event.from);
         this.audio.playNotification('notification');
         break;
       case 'error':
@@ -213,11 +264,11 @@ export class SessionService {
   }
 
   private sendCamera(): void {
-    this.peer.setOutgoingTrack('video', this.media.cameraTrack() ?? null);
+    this.room.setOutgoingTrack('video', this.media.cameraTrack() ?? null);
   }
 
-  private addMessage(author: ChatMessage['author'], text: string): void {
-    const message: ChatMessage = { id: this.nextMessageId++, author, text, at: new Date() };
+  private addMessage(author: ChatMessage['author'], text: string, name?: string): void {
+    const message: ChatMessage = { id: this.nextMessageId++, author, name, text, at: new Date() };
     this.messages.update((items) => [...items, message]);
   }
 }

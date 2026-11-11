@@ -3,14 +3,16 @@ import { FormsModule } from '@angular/forms';
 import { ChatComponent } from '../components/chat/chat.component';
 import { ClockComponent } from '../components/clock.component';
 import { LoaderComponent } from '../components/loader/loader.component';
+import { ParticipantListComponent, VolumeChange } from '../components/participant-list/participant-list.component';
 import { RangeComponent } from '../components/range/range.component';
 import { SelectComponent } from '../components/select/select.component';
 import { SwitchComponent } from '../components/switch/switch.component';
 import { VideoStageComponent } from '../components/video-stage/video-stage.component';
+import { AppUpdateService } from '../services/app-update.service';
 import { AudioService } from '../services/audio.service';
 import { InstallPromptService } from '../services/install-prompt.service';
 import { LocalMediaService } from '../services/local-media.service';
-import { PeerJsService } from '../services/peerjs.service';
+import { RoomService } from '../services/room/room.service';
 import { SessionService } from '../services/session.service';
 
 const ROOM_QUERY_PARAM = 'room';
@@ -23,6 +25,7 @@ const COPIED_FEEDBACK_MS = 1500;
     ChatComponent,
     ClockComponent,
     LoaderComponent,
+    ParticipantListComponent,
     RangeComponent,
     SelectComponent,
     SwitchComponent,
@@ -33,26 +36,45 @@ const COPIED_FEEDBACK_MS = 1500;
 })
 export class App implements OnDestroy {
   protected readonly session = inject(SessionService);
-  protected readonly peerJs = inject(PeerJsService);
+  protected readonly room = inject(RoomService);
   protected readonly media = inject(LocalMediaService);
   protected readonly audio = inject(AudioService);
   protected readonly installPrompt = inject(InstallPromptService);
+  protected readonly appUpdate = inject(AppUpdateService);
 
   protected readonly customRoomId = signal('');
   protected readonly remotePeerId = signal(new URLSearchParams(location.search).get(ROOM_QUERY_PARAM) ?? '');
   protected readonly isMediaStarted = signal(false);
   protected readonly copied = signal<'id' | 'link' | null>(null);
   protected readonly canShareInvite = typeof navigator.share === 'function';
-  protected readonly hasHiddenRemoteMedia = computed(() => {
-    const remote = this.peerJs.remoteMedia();
-    return !this.isMediaStarted() && (remote.mic || remote.cam || remote.screen);
+  /** Per participant, on top of the shared volume. Not saved: IDs change with every call. */
+  protected readonly volumes = signal<Record<string, number>>({});
+  protected readonly myMedia = computed(() => ({
+    mic: this.media.isMicEnabled(),
+    cam: this.media.isCamEnabled(),
+    screen: this.media.isSharingScreen()
+  }));
+  protected readonly hasHiddenRemoteMedia = computed(
+    () =>
+      !this.isMediaStarted() &&
+      this.session.participants().some((link) => {
+        const remote = link.media();
+        return remote.mic || remote.cam || remote.screen;
+      })
+  );
+  protected readonly shareScreenHint = computed(() => {
+    const sharer = this.session.screenSharer();
+    if (sharer) {
+      return `${sharer.name()} is sharing their screen`;
+    }
+    return this.session.isConnected() ? '' : 'Available once someone joins';
   });
 
   private copiedTimer?: number;
 
   ngOnDestroy(): void {
     window.clearTimeout(this.copiedTimer);
-    this.peerJs.disconnect();
+    this.room.disconnect();
     this.media.release();
   }
 
@@ -74,6 +96,10 @@ export class App implements OnDestroy {
     if (this.remotePeerId().trim()) {
       await this.session.joinRoom(this.remotePeerId());
     }
+  }
+
+  protected setVolume({ id, value }: VolumeChange): void {
+    this.volumes.update((volumes) => ({ ...volumes, [id]: value }));
   }
 
   protected toggleMediaStage(): void {
@@ -107,7 +133,7 @@ export class App implements OnDestroy {
   protected async shareInvite(): Promise<void> {
     this.audio.play('click');
     try {
-      await navigator.share({ title: 'P2P Room', text: 'Join my P2P room', url: this.inviteUrl() });
+      await navigator.share({ title: 'P2P Room', text: 'Join my P2P call', url: this.inviteUrl() });
     } catch (error) {
       // AbortError only means the user closed the share sheet.
       if ((error as Error).name !== 'AbortError') {

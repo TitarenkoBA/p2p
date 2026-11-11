@@ -4,12 +4,23 @@ import { Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { AudioService } from './audio.service';
 import { LocalMediaService } from './local-media.service';
-import { ConnectionState, PeerEvent, PeerJsService, PeerRole } from './peerjs.service';
+import { PeerLink } from './room/peer-link';
+import { MEDIA_OFF, PeerMediaState } from './room/protocol';
+import { ConnectionState, PeerRole, RoomEvent, RoomService } from './room/room.service';
 import { SessionService } from './session.service';
+
+function fakeLink(id: string, name: string, media: Partial<PeerMediaState> = {}): PeerLink {
+  return {
+    id,
+    name: signal(name),
+    media: signal({ ...MEDIA_OFF, ...media }),
+    status: signal('connected')
+  } as unknown as PeerLink;
+}
 
 describe('SessionService', () => {
   const stream = {} as MediaStream;
-  let events: Subject<PeerEvent>;
+  let events: Subject<RoomEvent>;
   let peer: {
     createRoom: ReturnType<typeof vi.fn>;
     joinRoom: ReturnType<typeof vi.fn>;
@@ -19,10 +30,11 @@ describe('SessionService', () => {
     setOutgoingTrack: ReturnType<typeof vi.fn>;
   };
   let state: WritableSignal<ConnectionState>;
+  let participants: WritableSignal<PeerLink[]>;
+  let myPeerId: WritableSignal<string | null>;
   let media: {
     acquire: ReturnType<typeof vi.fn>;
     release: ReturnType<typeof vi.fn>;
-    muteAll: ReturnType<typeof vi.fn>;
     isMicEnabled: WritableSignal<boolean>;
     isCamEnabled: WritableSignal<boolean>;
     isSharingScreen: WritableSignal<boolean>;
@@ -45,10 +57,11 @@ describe('SessionService', () => {
       setOutgoingTrack: vi.fn()
     };
     state = signal<ConnectionState>('idle');
+    participants = signal<PeerLink[]>([]);
+    myPeerId = signal<string | null>(null);
     media = {
       acquire: vi.fn().mockResolvedValue(stream),
       release: vi.fn(),
-      muteAll: vi.fn(),
       isMicEnabled: signal(false),
       isCamEnabled: signal(false),
       isSharingScreen: signal(false),
@@ -61,14 +74,17 @@ describe('SessionService', () => {
     TestBed.configureTestingModule({
       providers: [
         {
-          provide: PeerJsService,
+          provide: RoomService,
           useValue: {
             ...peer,
             events$: events,
             state,
+            participants,
+            myPeerId,
+            capacity: 4,
             role: signal<PeerRole>(null),
-            myPeerId: signal(null),
-            remotePeerId: signal(null),
+            roomId: signal(null),
+            myName: signal(''),
             signalingLost: signal(false)
           }
         },
@@ -121,22 +137,37 @@ describe('SessionService', () => {
     expect(session.status()).toBe('Not connected');
   });
 
-  it('keeps media but mutes it when a guest leaves the host', () => {
-    events.next({ type: 'left', role: 'host' });
-    expect(media.muteAll).toHaveBeenCalled();
+  it('passes the chosen name to the room', async () => {
+    session.setName('Ann');
+    await session.joinRoom('room');
+    expect(peer.joinRoom).toHaveBeenCalledWith('room', stream, 'Ann');
+  });
+
+  it('keeps media running as people come and go', () => {
+    events.next({ type: 'joined', name: 'Ann' });
+    events.next({ type: 'left', name: 'Ann' });
     expect(media.release).not.toHaveBeenCalled();
+    expect(session.messages().map((message) => message.text)).toEqual(['Ann joined', 'Ann left']);
   });
 
-  it('releases media when the host leaves the guest', () => {
-    events.next({ type: 'left', role: 'guest' });
+  it('releases media when the host closes the room', () => {
+    events.next({ type: 'room-closed' });
     expect(media.release).toHaveBeenCalled();
+    expect(session.status()).toBe('The host closed the room.');
   });
 
-  it('tells a connected peer about media changes', () => {
-    TestBed.tick();
-    expect(peer.sendMediaState).not.toHaveBeenCalled();
-
+  it('counts everyone in the status', () => {
     state.set('connected');
+    participants.set([fakeLink('a', 'Ann'), fakeLink('b', 'Bob')]);
+    expect(session.status()).toBe('Connected · 3 of 4 in the room');
+  });
+
+  it('keeps the author of chat messages', () => {
+    events.next({ type: 'message', from: 'Ann', text: 'hi' });
+    expect(session.messages()[0]).toMatchObject({ author: 'peer', name: 'Ann', text: 'hi' });
+  });
+
+  it('tells the room about media changes', () => {
     TestBed.tick();
     expect(peer.sendMediaState).toHaveBeenLastCalledWith({ mic: false, cam: false, screen: false });
 
@@ -145,7 +176,26 @@ describe('SessionService', () => {
     expect(peer.sendMediaState).toHaveBeenLastCalledWith({ mic: false, cam: true, screen: false });
   });
 
-  it('only shares the screen with a connected peer', async () => {
+  it('does not share while someone else is sharing', async () => {
+    state.set('connected');
+    participants.set([fakeLink('a', 'Ann', { screen: true })]);
+    await session.toggleScreenShare();
+    expect(media.startScreenShare).not.toHaveBeenCalled();
+  });
+
+  it('backs off when someone with a smaller ID shares at the same time', () => {
+    myPeerId.set('b');
+    media.isSharingScreen.set(true);
+    participants.set([fakeLink('c', 'Cid', { screen: true })]);
+    TestBed.tick();
+    expect(media.stopScreenShare).not.toHaveBeenCalled();
+
+    participants.set([fakeLink('a', 'Ann', { screen: true })]);
+    TestBed.tick();
+    expect(media.stopScreenShare).toHaveBeenCalled();
+  });
+
+  it('only shares the screen when someone is in the room', async () => {
     await session.toggleScreenShare();
     expect(media.startScreenShare).not.toHaveBeenCalled();
 
@@ -166,8 +216,14 @@ describe('SessionService', () => {
     expect(peer.setOutgoingTrack).toHaveBeenCalledWith('video', camera);
   });
 
-  it('stops sharing when the guest leaves the host', () => {
-    events.next({ type: 'left', role: 'host' });
+  it('stops sharing when the last participant leaves', () => {
+    participants.set([fakeLink('a', 'Ann')]);
+    media.isSharingScreen.set(true);
+    TestBed.tick();
+    expect(media.stopScreenShare).not.toHaveBeenCalled();
+
+    participants.set([]);
+    TestBed.tick();
     expect(media.stopScreenShare).toHaveBeenCalled();
   });
 

@@ -9,12 +9,15 @@
     tabindex="0"
     (scroll)="onScroll(scrollContainer)"
   >
-    @for (message of messages(); track message.id) {
+    @for (message of messages(); track message.id; let i = $index) {
       @if (message.author === 'system') {
         <p class="message-system">{{ message.text }} · {{ message.at | date: 'HH:mm' }}</p>
       } @else {
         <div class="message-row" [class.mine]="message.author === 'me'">
           <p class="message-bubble">
+            @if (showAuthor(message, i)) {
+              <span class="message-author" [style.color]="authorColor(message.name!)">{{ message.name }}</span>
+            }
             {{ message.text }}
             <time class="message-time">{{ message.at | date: 'HH:mm' }}</time>
           </p>
@@ -22,7 +25,7 @@
       }
     } @empty {
       <p class="messages-empty">
-        {{ canSend() ? 'No messages yet. Say hi!' : 'Messages will appear here once your peer connects.' }}
+        {{ canSend() ? 'No messages yet. Say hi!' : 'Messages will appear here once someone joins.' }}
       </p>
     }
   </div>
@@ -32,7 +35,7 @@
       name="message-field"
       aria-label="Message"
       rows="1"
-      [placeholder]="canSend() ? 'Message' : 'Connect to a peer to chat'"
+      [placeholder]="canSend() ? 'Message everyone' : 'Chat opens once someone joins'"
       [value]="draft()"
       (input)="onInput(field.value)"
       (keydown)="onKeyDown($event)"

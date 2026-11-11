@@ -3,6 +3,8 @@ import { Component, ElementRef, afterRenderEffect, input, output, signal, viewCh
 import { ChatMessage } from '../../services/session.service';
 
 const STICK_TO_BOTTOM_THRESHOLD_PX = 40;
+/** Dark enough to read on the light bubbles. */
+const AUTHOR_COLORS = ['#3c49d6', '#b0287c', '#0f7a4d', '#b35a00', '#6b3fc4', '#0a6f8f'];
 
 @Component({
   selector: 'chat',
@@ -36,6 +38,24 @@ export class ChatComponent {
       element.style.height = 'auto';
       element.style.height = `${element.scrollHeight}px`;
     });
+  }
+
+  /** A name heads each run of messages from the same person. */
+  protected showAuthor(message: ChatMessage, index: number): boolean {
+    if (message.author !== 'peer' || !message.name) {
+      return false;
+    }
+    const previous = this.messages()[index - 1];
+    return previous?.author !== 'peer' || previous.name !== message.name;
+  }
+
+  /** The same name always gets the same color. */
+  protected authorColor(name: string): string {
+    let hash = 0;
+    for (const char of name) {
+      hash = (hash * 31 + char.charCodeAt(0)) | 0;
+    }
+    return AUTHOR_COLORS[Math.abs(hash) % AUTHOR_COLORS.length];
   }
 
   protected onScroll(element: HTMLElement): void {

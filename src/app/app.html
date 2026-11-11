@@ -18,6 +18,15 @@
       </section>
     }
 
+    @if (appUpdate.isReady()) {
+      <section class="install-banner">
+        <p>A new version of the app is available. Reload to use it, ideally after your call.</p>
+        <div class="install-actions">
+          <button type="button" (click)="appUpdate.reload()">Reload</button>
+        </div>
+      </section>
+    }
+
     <div class="card status-panel" role="status" aria-live="polite">
       <span class="status-dot" [attr.data-tone]="session.tone()"></span>
       <p>{{ session.status() }}</p>
@@ -25,9 +34,22 @@
     @if (media.notice(); as notice) {
       <p class="hint">{{ notice }}</p>
     }
-    <p class="hint">Signaling: {{ peerJs.signalingServer }}. Media and chat are peer-to-peer.</p>
+    <p class="hint">Signaling: {{ room.signalingServer }}. Media and chat are peer-to-peer, up to {{ room.capacity }} people per room.</p>
 
     @if (session.isIdle()) {
+      <div class="name-field">
+        <label for="display-name">Your name (optional)</label>
+        <input
+          id="display-name"
+          name="display-name"
+          type="text"
+          autocomplete="nickname"
+          maxlength="32"
+          [ngModel]="session.name()"
+          (ngModelChange)="session.setName($event)"
+          placeholder="Others will see “Guest 2” or similar"
+        />
+      </div>
       <div class="room-forms">
         <form class="room-form" (ngSubmit)="createRoom()">
           <label for="custom-room-id">Custom room ID (optional)</label>
@@ -83,18 +105,20 @@
     <section class="media">
       <video-stage
         [active]="isMediaStarted()"
+        [participants]="session.participants()"
         [localStream]="media.previewStream()"
-        [remoteVideo]="peerJs.remoteVideo()"
-        [remoteAudio]="peerJs.remoteAudio()"
+        [microphoneStream]="media.stream()"
+        [myName]="room.myName() || session.name() || 'You'"
         [isCamEnabled]="media.isCamEnabled()"
-        [remoteVolume]="audio.remoteVolume()"
-        [remoteMedia]="peerJs.remoteMedia()"
+        [isMicEnabled]="media.isMicEnabled()"
         [isSharingScreen]="media.isSharingScreen()"
+        [volumes]="volumes()"
+        [masterVolume]="audio.remoteVolume()"
         [speakerId]="media.speakerId()"
       />
 
       @if (hasHiddenRemoteMedia()) {
-        <p class="hint">Your peer's media is ready. Press Start media to see and hear them.</p>
+        <p class="hint">Others have turned on their camera or microphone. Press Start media to see and hear them.</p>
       }
 
       <div class="controls">
@@ -105,8 +129,8 @@
           <button
             type="button"
             [attr.aria-pressed]="media.isSharingScreen()"
-            [disabled]="!session.isConnected()"
-            [title]="session.isConnected() ? '' : 'Available once your peer is connected'"
+            [disabled]="!media.isSharingScreen() && !!shareScreenHint()"
+            [title]="media.isSharingScreen() ? '' : shareScreenHint()"
             (click)="session.toggleScreenShare()"
           >
             {{ media.isSharingScreen() ? 'Stop sharing' : 'Share screen' }}
@@ -170,7 +194,7 @@
 
       <div class="volumes">
         <range
-          label="Peer volume"
+          label="Everyone's volume"
           [value]="audio.remoteVolume()"
           (valueChange)="audio.setRemoteVolume($event)"
         />
@@ -181,6 +205,18 @@
         />
       </div>
     </section>
+
+    @if (session.roomId() && !session.isIdle()) {
+      <participant-list
+        [participants]="session.participants()"
+        [myName]="room.myName() || session.name()"
+        [isHost]="session.isHost()"
+        [capacity]="room.capacity"
+        [myMedia]="myMedia()"
+        [volumes]="volumes()"
+        (volumeChange)="setVolume($event)"
+      />
+    }
 
     <chat
       [messages]="session.messages()"

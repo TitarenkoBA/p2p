@@ -1,0 +1,62 @@
+.participants {
+  margin-top: 1.25rem;
+}
+
+.participants h3 {
+  margin: 0 0 0.65rem;
+}
+
+ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participant {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow-inset);
+}
+
+.participant__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.participant__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.participant__badge {
+  flex: none;
+  padding: 0.05rem 0.45rem;
+  border-radius: 8px;
+  background: linear-gradient(to bottom, var(--accent-from), var(--accent-to));
+  color: #fff;
+  font-size: 0.75rem;
+  text-shadow: none;
+}
+
+.participant__state {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.participant__state.is-failed {
+  color: var(--danger);
+}
+
+@media (min-width: 768px) {
+  ul {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -130,11 +130,6 @@ export class LocalMediaService {
     this.isCamEnabled.set(enabled && this.hasCam());
   }
 
-  muteAll(): void {
-    this.setMicEnabled(false);
-    this.setCamEnabled(false);
-  }
-
   /**
    * Replaces the microphone or camera, keeping its on/off state. Falls back to the previous
    * device if the new one fails. Resolves to null if the media was released in the meantime.

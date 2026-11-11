@@ -1,0 +1,84 @@
+:host {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--stage);
+}
+
+/* Drawn over the video, which would cover a border or an inset shadow. */
+:host::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px solid transparent;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: border-color 0.15s ease;
+}
+
+:host(.is-speaking)::after {
+  border-color: var(--ok);
+}
+
+video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: var(--tile-ratio, 16 / 11);
+  object-fit: cover;
+}
+
+/* A shared screen must stay readable, so it is never cropped. */
+video.is-screen {
+  object-fit: contain;
+}
+
+/* Mirror the self-view, as people expect from a front camera. */
+video.is-mirrored {
+  transform: scaleX(-1);
+}
+
+.tile-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--stage);
+  color: #c9ced6;
+  font-size: 0.9rem;
+  text-align: center;
+  text-shadow: none;
+  pointer-events: none;
+}
+
+.tile-name {
+  position: absolute;
+  left: 0.45rem;
+  bottom: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: calc(100% - 0.9rem);
+  padding: 0.15rem 0.5rem;
+  border-radius: 9px;
+  background: #00000080;
+  color: #fff;
+  font-size: 0.8rem;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mic-off {
+  flex: none;
+  fill: none;
+  stroke: #ff9b9b;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

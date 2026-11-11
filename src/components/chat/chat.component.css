@@ -59,6 +59,13 @@
   background: #cfdeef;
 }
 
+.message-author {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .message-time {
   display: block;
   margin-top: 0.15rem;
