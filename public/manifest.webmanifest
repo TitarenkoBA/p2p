@@ -2,6 +2,7 @@
   "name": "P2P Room",
   "short_name": "P2P",
   "description": "Minimal P2P chat with text, voice and video.",
+  "id": "/p2p/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
